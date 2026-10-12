@@ -1,0 +1,65 @@
+{
+  "app": "書審資料包產生器",
+  "version": 1,
+  "exportedAt": "2026-10-01T00:00:00.000Z",
+  "note": "四包範例設定：清大2301甲組、交大603百川、NVIDIA校園計畫、Google Taiwan Student Ambassador。直接以工具內「匯入設定 JSON」載入即可。",
+  "packages": [
+    {
+      "id": "p1",
+      "school": "國立清華大學",
+      "program": "2301 甲組（特殊選才）",
+      "note": "自傳 4 頁內；推薦函 2 封（其一須就讀學校師長）；其他有利申請資料 10 頁內單檔",
+      "items": [
+        { "id": "i1", "name": "個人學習資料表", "required": true, "keywords": ["個人學習資料表", "學習資料表", "個人資料表", "資料表"] },
+        { "id": "i2", "name": "高中成績單（含班級／班群／年級名次證明）", "required": true, "keywords": ["成績單", "高中成績單", "歷年成績", "名次證明", "排名證明", "transcript"] },
+        { "id": "i3", "name": "自傳（成長歷程＋讀書計畫＋申請動機，4 頁內）", "required": true, "keywords": ["自傳", "自述", "讀書計畫", "讀書計劃", "申請動機", "autobiography"] },
+        { "id": "i4", "name": "推薦函 2 封（其一須就讀學校師長）", "required": true, "keywords": ["推薦函", "推薦信", "推薦", "recommend"] },
+        { "id": "i5", "name": "其他有利申請資料（10 頁內單檔）", "required": false, "keywords": ["證明", "證書", "證照", "獲獎", "獎狀", "檢定", "競賽", "專題", "作品"] }
+      ]
+    },
+    {
+      "id": "p2",
+      "school": "國立陽明交通大學",
+      "program": "603 百川學士學位學程（特殊選才）",
+      "note": "自傳手寫 1000 字內；學習計畫 A4 三頁內；推薦函 2 封",
+      "items": [
+        { "id": "i6", "name": "個人資料表", "required": true, "keywords": ["個人資料表", "個人資料", "資料表", "簡歷", "履歷"] },
+        { "id": "i7", "name": "學歷（力）證明", "required": true, "keywords": ["學歷證明", "學力證明", "在學證明", "學歷", "畢業證書"] },
+        { "id": "i8", "name": "成績單", "required": true, "keywords": ["成績單", "歷年成績", "在校成績", "transcript"] },
+        { "id": "i9", "name": "操行表現或獎懲證明", "required": true, "keywords": ["操行", "獎懲", "德行", "獎懲證明", "操行證明"] },
+        { "id": "i10", "name": "自傳（手寫 1000 字內）", "required": true, "keywords": ["自傳", "自述", "手寫自傳"] },
+        { "id": "i11", "name": "學習計畫（A4 三頁內）", "required": true, "keywords": ["學習計畫", "學習計劃", "讀書計畫", "讀書計劃", "study plan"] },
+        { "id": "i12", "name": "推薦函 2 封", "required": true, "keywords": ["推薦函", "推薦信", "推薦", "recommend"] },
+        { "id": "i13", "name": "其他補充資料", "required": false, "keywords": ["補充", "證明", "證書", "獲獎", "獎狀", "競賽", "專題", "作品"] }
+      ]
+    },
+    {
+      "id": "p3",
+      "school": "NVIDIA",
+      "program": "校園計畫／學生實習",
+      "note": "文件以英文為主；檔名建議英文命名，推薦函 1 封",
+      "items": [
+        { "id": "i14", "name": "英文履歷 Resume", "required": true, "keywords": ["resume", "cv", "履歷", "英文履歷"] },
+        { "id": "i15", "name": "動機信 Cover Letter", "required": true, "keywords": ["cover letter", "動機信", "動機", "motivation"] },
+        { "id": "i16", "name": "在校成績單 Transcript", "required": true, "keywords": ["transcript", "成績單", "在校成績"] },
+        { "id": "i17", "name": "在學證明 Enrollment Certificate", "required": true, "keywords": ["enrollment", "在學證明", "學籍證明"] },
+        { "id": "i18", "name": "作品集／專題成果 Portfolio", "required": false, "keywords": ["portfolio", "作品集", "專題", "成果", "project"] },
+        { "id": "i19", "name": "推薦函 Recommendation Letter", "required": true, "keywords": ["recommendation", "reference", "推薦函", "推薦信", "推薦"] }
+      ]
+    },
+    {
+      "id": "p4",
+      "school": "Google",
+      "program": "Taiwan Student Ambassador",
+      "note": "履歷可中文或英文；需附身心障礙證明影本",
+      "items": [
+        { "id": "i20", "name": "中文或英文履歷 Resume／CV", "required": true, "keywords": ["resume", "cv", "履歷", "簡歷"] },
+        { "id": "i21", "name": "成績單 Transcript", "required": true, "keywords": ["transcript", "成績單", "在校成績"] },
+        { "id": "i22", "name": "學生證影本 Student ID", "required": true, "keywords": ["student id", "學生證", "在學證明"] },
+        { "id": "i23", "name": "身心障礙證明影本 Disability Certificate", "required": true, "keywords": ["身心障礙", "身心障礙證明", "障礙證明", "disability"] },
+        { "id": "i24", "name": "動機信 Motivation Letter", "required": true, "keywords": ["motivation", "動機信", "動機", "cover letter"] }
+      ]
+    }
+  ],
+  "files": []
+}

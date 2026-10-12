@@ -1,0 +1,2164 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>書審資料包產生器</title>
+<meta name="description" content="純本機、可離線使用的書審（備審）資料檢查與繳件清單產生工具">
+<style>
+:root{
+  --bg:#f4f6f9; --card:#ffffff; --ink:#1f2328; --sub:#5b6470; --line:#e3e7ec;
+  --brand:#2c5fa8; --brand-d:#1f4a86; --ok:#128a4e; --okbg:#e7f6ed;
+  --bad:#c8372f; --badbg:#fdecea; --warn:#b57609; --warnbg:#fdf5e3;
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto Sans TC","Hiragino Sans CJK TC","Microsoft JhengHei",sans-serif;
+  -webkit-text-size-adjust:100%;
+}
+header{background:linear-gradient(135deg,var(--brand),var(--brand-d));color:#fff;padding:22px 18px 20px}
+header h1{margin:0;font-size:22px;letter-spacing:.5px}
+header .sub{margin:6px 0 0;font-size:13.5px;opacity:.92}
+header .privacy{margin:10px 0 0;font-size:12.5px;background:rgba(255,255,255,.16);display:inline-block;padding:5px 10px;border-radius:999px}
+main{max-width:1080px;margin:0 auto;padding:16px 14px 80px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:14px 0;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.card>h2{margin:0 0 4px;font-size:17px;display:flex;align-items:center;gap:8px}
+.card>h2 .num{background:var(--brand);color:#fff;font-size:12px;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%;flex:none}
+.card .desc{margin:2px 0 14px;color:var(--sub);font-size:13.5px}
+.muted{color:var(--sub)}
+.small{font-size:13px}
+.btn{
+  appearance:none;border:1px solid var(--line);background:#fff;color:var(--ink);
+  padding:9px 14px;border-radius:10px;font-size:14.5px;cursor:pointer;min-height:40px;
+  font-family:inherit;transition:.15s;
+}
+.btn:hover{border-color:#c3ccd8;background:#fafbfd}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.primary:hover{background:var(--brand-d)}
+.btn.danger{color:var(--bad);border-color:#f0c6c2}
+.btn.danger:hover{background:var(--badbg)}
+.btn.tiny{padding:5px 9px;font-size:12.5px;min-height:30px;border-radius:8px}
+.btn.row{display:inline-flex;align-items:center;gap:6px;margin:4px 8px 4px 0}
+input[type=text],input:not([type]),select,textarea{
+  font-family:inherit;font-size:16px;padding:9px 11px;border:1px solid var(--line);
+  border-radius:10px;background:#fff;color:var(--ink);width:100%;min-height:42px;
+}
+input:focus,select:focus,textarea:focus{outline:2px solid #cfe0f7;border-color:#9dbbdf}
+label.fld{display:block;font-size:13px;color:var(--sub);margin:0 0 10px}
+label.fld>span{display:block;margin-bottom:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.grid2 .full{grid-column:1 / -1}
+@media(max-width:720px){.grid2{grid-template-columns:1fr}}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.toolbar .grow{flex:1 1 220px}
+.pkg{border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 14px;background:#fcfdff}
+.pkg-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.pkg-title{font-weight:700;font-size:15.5px}
+.badge{display:inline-block;font-size:12.5px;padding:3px 9px;border-radius:999px;background:#eef2f7;color:var(--sub);margin-left:6px}
+.badge.ok{background:var(--okbg);color:var(--ok)}
+.badge.warn{background:var(--warnbg);color:var(--warn)}
+.badge.bad{background:var(--badbg);color:var(--bad)}
+.items{border-top:1px dashed var(--line);padding-top:10px}
+.itemrow{display:grid;grid-template-columns:minmax(104px,168px) 1.1fr 1.6fr auto;gap:8px;align-items:center;padding:7px 0;border-bottom:1px dashed #eef1f5}
+.itemrow:last-child{border-bottom:none}
+.itemrow .req{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--sub);white-space:nowrap}
+.itemrow input[type=checkbox]{width:18px;height:18px;min-height:auto}
+.itemrow .acts{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.itemrow .flags{display:flex;flex-direction:column;gap:2px}
+@media(max-width:720px){
+  .itemrow{grid-template-columns:1fr;gap:6px;padding:10px 0}
+  .itemrow .flags{flex-direction:row;gap:14px;flex-wrap:wrap}
+  .itemrow .acts{justify-content:flex-end}
+  /* 手機版：檔案列改為上下堆疊，兩個下拉各佔一半寬度，避免超出畫面 */
+  .btn{min-height:42px}
+  .btn.tiny{min-height:34px;padding:7px 10px;font-size:13px}
+  .itemrow input[type=checkbox]{width:20px;height:20px}
+  .frow{gap:6px}
+  .fmain{min-width:0;flex:1 1 100%}
+  .fassign{width:100%;gap:6px}
+  .fassign select{flex:1 1 132px;min-width:0;max-width:100%}
+  .fassign .btn{flex:0 0 auto}
+  .toolbar .btn{flex:1 1 auto}
+  .pkg-title{font-size:14px}
+  table.tbl{min-width:480px}
+  .preview{font-size:12px;max-height:260px}
+}
+.drop{
+  border:2px dashed #bcc9da;border-radius:12px;padding:22px 14px;text-align:center;
+  background:#fbfcfe;color:var(--sub);transition:.15s;
+}
+.drop.over{border-color:var(--brand);background:#eef4fc;color:var(--brand)}
+.drop strong{color:var(--ink);display:block;font-size:15.5px;margin-bottom:4px}
+.hidden{display:none !important}
+.frow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;border-bottom:1px solid #eef1f5;padding:10px 0}
+.frow:last-child{border-bottom:none}
+.fmain{min-width:220px;flex:1 1 300px}
+.fname{font-size:14.5px;word-break:break-all}
+.fmeta{font-size:12px;color:var(--sub);word-break:break-all}
+.fassign{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.fassign select{width:auto;min-width:150px;min-height:36px;font-size:14px;padding:6px 8px}
+.pill{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:999px;margin-left:6px;vertical-align:middle}
+.pill.dup{background:var(--warnbg);color:var(--warn)}
+.pill.nohash{background:#eef2f7;color:var(--sub)}
+.dot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle}
+.dot.ok{background:var(--ok);box-shadow:0 0 0 3px var(--okbg)}
+.dot.bad{background:var(--bad);box-shadow:0 0 0 3px var(--badbg)}
+.dot.opt{background:#9aa5b1;box-shadow:0 0 0 3px #eef2f7}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.tbl{width:100%;border-collapse:collapse;font-size:14px;min-width:560px}
+table.tbl th,table.tbl td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+table.tbl th{background:#f7f9fc;font-size:13px;color:var(--sub);white-space:nowrap}
+.chk{margin-bottom:14px}
+.chk h3{margin:0 0 6px;font-size:15px}
+.bar{height:9px;border-radius:999px;background:#e9edf3;overflow:hidden;margin:6px 0 10px}
+.bar>i{display:block;height:100%;background:var(--ok)}
+.bar.partial>i{background:var(--warn)}
+.bar.zero>i{background:var(--bad)}
+.preview{white-space:pre-wrap;word-break:break-word;background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:12.5px;line-height:1.55;max-height:340px;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+details.guide{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fcfdff;margin:10px 0 0}
+details.guide summary{cursor:pointer;font-weight:700;font-size:14.5px}
+details.guide ol{margin:10px 0 4px;padding-left:22px;font-size:14px}
+details.guide li{margin:5px 0}
+#toast{
+  position:fixed;left:50%;bottom:22px;transform:translate(-50%,80px);background:#1f2328;color:#fff;
+  padding:11px 18px;border-radius:10px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:99;max-width:88vw;text-align:center
+}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+footer{color:var(--sub);font-size:12.5px;text-align:center;padding:0 16px 40px}
+.kv{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
+.kv .k{background:#eef2f7;border-radius:8px;padding:5px 10px;font-size:13px}
+noscript{display:block;background:var(--badbg);color:var(--bad);padding:12px;border-radius:10px;margin:16px}
+
+/* ===================== 語言切換 ===================== */
+.hrow{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;justify-content:space-between}
+.hmain{min-width:0;flex:1 1 320px}
+.langsw{display:flex;gap:4px;align-items:center;background:rgba(255,255,255,.16);padding:4px;border-radius:999px;flex:none}
+.lang-btn{background:transparent;border-color:transparent;color:#fff;border-radius:999px;min-height:34px;padding:6px 14px;font-size:13.5px}
+.lang-btn:hover{background:rgba(255,255,255,.2);border-color:transparent;color:#fff}
+.lang-btn.active{background:#fff;color:var(--brand-d);border-color:#fff;font-weight:700}
+
+/* ===================== 手寫稿紙 ===================== */
+.pill.hand{background:#eae6fb;color:#5340c0}
+.itemrow .flags{display:flex;flex-direction:column;gap:2px;font-size:13px;color:var(--sub)}
+.itemrow .flags .req{display:flex;align-items:center;gap:6px}
+.sheet-modal{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(16,24,40,.55);z-index:120;display:flex;flex-direction:column}
+.sheet-modal.hidden{display:none !important}
+.sheet-ui{background:var(--card);width:100%;max-width:1180px;height:100%;margin:0 auto;display:flex;flex-direction:column;min-height:0;box-shadow:0 8px 30px rgba(16,24,40,.3)}
+.sheet-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);flex:none}
+.sheet-head h3{margin:0;font-size:16.5px}
+.sheet-body{flex:1 1 auto;display:grid;grid-template-columns:minmax(280px,360px) 1fr;min-height:0}
+.sheet-left{border-right:1px solid var(--line);padding:12px 14px;overflow:auto;min-height:0}
+.sheet-right{overflow:auto;padding:14px;background:#eef1f6;min-height:0;-webkit-overflow-scrolling:touch}
+.sheet-left textarea{min-height:170px;line-height:1.6;resize:vertical}
+.sheet-grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.sheet-stat{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
+.sheet-stat .k{background:#eef2f7;border-radius:8px;padding:5px 10px;font-size:13px}
+.sheet-warn{background:var(--badbg);color:var(--bad);border-radius:8px;padding:8px 10px;font-size:13px;margin:8px 0 0}
+.sheet-ok{background:var(--okbg);color:var(--ok);border-radius:8px;padding:8px 10px;font-size:13px;margin:8px 0 0}
+.sheet-note{font-size:12.5px;color:var(--sub);margin:8px 0 0}
+.chkbox{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--sub);margin:0 0 10px}
+.chkbox input[type=checkbox]{width:18px;height:18px;min-height:auto}
+.sheet-pages{display:flex;flex-direction:column;align-items:center;gap:14px}
+.sheet-page{width:210mm;height:297mm;background:#fff;box-shadow:0 1px 8px rgba(16,24,40,.18);padding:15mm;box-sizing:border-box;flex:none}
+.sheet-inner{width:180mm;height:267mm;overflow:hidden}
+.sheet-line{display:flex;box-sizing:border-box}
+.sheet-cell{box-sizing:border-box;text-align:center;overflow:hidden;color:#1b1b1b;padding:0}
+.sheet-page.grid .sheet-cell{border:.2mm solid #b9c9dc}
+.sheet-page.lines .sheet-line{border-bottom:.2mm solid #b9c9dc}
+.sheet-empty{color:var(--sub);font-size:13px;padding:18px;text-align:center;background:var(--card);border-radius:10px;width:100%}
+@media(max-width:820px){
+  .sheet-body{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .sheet-left{border-right:none;border-bottom:1px solid var(--line)}
+  .sheet-head h3{font-size:15px}
+}
+@media print{
+  @page{size:A4 portrait;margin:0}
+  body.print-sheet>*{display:none !important}
+  body.print-sheet #sheet-modal{display:block !important;position:static !important;top:auto !important;right:auto !important;bottom:auto !important;left:auto !important;background:#fff !important;z-index:auto !important}
+  body.print-sheet #sheet-modal .sheet-ui{display:block !important;max-width:none !important;height:auto !important;box-shadow:none !important;margin:0 !important}
+  body.print-sheet #sheet-modal .sheet-head{display:none !important}
+  body.print-sheet #sheet-modal .sheet-body{display:block !important}
+  body.print-sheet #sheet-modal .sheet-left{display:none !important}
+  body.print-sheet #sheet-modal .sheet-right{display:block !important;background:#fff !important;padding:0 !important;overflow:visible !important}
+  body.print-sheet .sheet-empty{display:none !important}
+  body.print-sheet .sheet-pages{gap:0 !important;align-items:flex-start !important}
+  body.print-sheet .sheet-page{box-shadow:none !important;margin:0 !important;break-after:page;page-break-after:always}
+  body.print-sheet .sheet-page:last-child{break-after:auto;page-break-after:auto}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <div class="hmain">
+      <h1 data-i18n="app.title">書審資料包產生器</h1>
+      <p class="sub" data-i18n="app.sub">整理備審（書審）資料、檢查缺件、產生繳件清單與建議資料夾結構</p>
+    </div>
+    <div class="langsw" role="group" data-i18n-aria="lang.aria" aria-label="語言切換">
+      <button class="btn lang-btn" id="btn-lang-zh" data-lang="zh" data-i18n="lang.zh" type="button">繁體中文</button>
+      <button class="btn lang-btn" id="btn-lang-en" data-lang="en" data-i18n="lang.en" type="button">English</button>
+    </div>
+  </div>
+  <p class="privacy" data-i18n="app.privacy">🔒 全程在你的瀏覽器本機運算，檔案不會上傳到任何伺服器，可離線使用</p>
+</header>
+
+<noscript data-i18n="app.noscript">本工具需要瀏覽器允許執行 JavaScript 才能運作。</noscript>
+
+<main>
+
+  <section class="card">
+    <h2><span class="num">?</span><span data-i18n="card0.title">30 秒上手</span></h2>
+    <p class="desc" data-i18n="card0.desc">跟著下面七步做完，就有一份可用的繳件清單。右上角可切換繁體中文／English。第一次用建議先按「載入示範」看看效果。</p>
+    <details class="guide" open>
+      <summary data-i18n="card0.summary">使用說明（點標題可收合）</summary>
+      <ol>
+        <li data-i18n-html="card0.li1"><b>建立申請包</b>：在「① 申請包與應繳項目」填校名、系組，按「新增申請包」；每一間學校／每個系組都建一個申請包。</li>
+        <li data-i18n-html="card0.li2"><b>設定應繳項目</b>：預設已含常見七項（個人資料表、成績單、操行證明、自傳、學習計畫、推薦函、其他有利資料），可自由改名、刪除、加新項目，並用「必繳／選繳」勾選區分。</li>
+        <li data-i18n-html="card0.li3"><b>選檔或拖檔</b>：把資料夾或檔案拖進「②」的虛線框，或按「選擇檔案」「選擇整個資料夾」。系統會依檔名關鍵字<b>自動建議</b>歸到哪個項目。</li>
+        <li data-i18n-html="card0.li4"><b>手動調整歸類</b>：每一列檔案右邊有兩個下拉選單，可改「申請包」與「項目」；不確定就先留「未歸類」。</li>
+        <li data-i18n-html="card0.li5"><b>看缺件紅燈</b>：「③ 缺件檢查」會用紅燈標出還沒備妥的必繳項目，並算出完成度。</li>
+        <li data-i18n-html="card0.li6"><b>匯出清單</b>：「④ 匯出」可下載 Markdown／CSV，或複製建議的資料夾結構，照著把檔案放進資料夾即可；匯出時可選中文或英文標題。</li>
+        <li data-i18n-html="card0.li7"><b>寫手寫稿紙</b>：需要手寫的項目（如自傳、學習計畫）在「①」勾選「需手寫」，再按該列的「稿紙」開啟稿紙產生器；貼上文字即可產生 A4 方格／橫線／空白稿紙，附字數行數頁數統計，並可直接列印或存成 PDF。</li>
+      </ol>
+      <p class="small muted" style="margin-top:8px" data-i18n-html="card0.note">重要觀念：瀏覽器基於安全限制，<b>不能</b>自動搬移你電腦裡的檔案，也<b>讀不到完整磁碟路徑</b>。本工具負責「規劃＋檢查＋開清單」，實際搬檔請你自己（或用檔案管理工具）按清單操作。</p>
+    </details>
+  </section>
+
+  <section class="card">
+    <h2><span class="num">1</span><span data-i18n="card1.title">申請包與應繳項目</span></h2>
+    <p class="desc" data-i18n="card1.desc">每一間學校／每個系組建立一個申請包，各自設定自己的應繳項目清單。需要手寫的項目請勾選「需手寫」。</p>
+    <div class="toolbar">
+      <div class="grow">
+        <select id="tpl-select" data-i18n-aria="card1.tplAria" aria-label="新增申請包時使用的範本">
+          <option value="default" data-i18n="card1.tplDefault">範本：常見七項（建議）</option>
+          <option value="blank" data-i18n="card1.tplBlank">範本：空白（自己逐項新增）</option>
+        </select>
+      </div>
+      <button class="btn primary" id="btn-add-pkg" data-i18n="card1.add">＋ 新增申請包</button>
+      <button class="btn" id="btn-demo" data-i18n="card1.demo">載入示範</button>
+      <button class="btn" id="btn-open-sheet" data-i18n="sheet.open">手寫稿紙產生器</button>
+    </div>
+    <div id="pkg-list"></div>
+  </section>
+
+  <section class="card">
+    <h2><span class="num">2</span><span data-i18n="card2.title">檔案歸類</span></h2>
+    <p class="desc" data-i18n="card2.desc">拖放檔案／資料夾進來，系統會依檔名關鍵字自動建議歸類；也可以手動改。檔案只在本機讀取，不會上傳。</p>
+    <div class="toolbar">
+      <div class="grow">
+        <select id="assign-target" data-i18n-aria="card2.assignAria" aria-label="匯入檔案時優先歸入哪個申請包">
+          <option value="">自動判斷（依檔名比對所有申請包）</option>
+        </select>
+      </div>
+      <button class="btn" id="btn-pick-files" data-i18n="card2.pickFiles">選擇檔案</button>
+      <button class="btn" id="btn-pick-folder" data-i18n="card2.pickFolder">選擇整個資料夾</button>
+      <button class="btn" id="btn-auto-assign" data-i18n="card2.autoAssign">重新自動歸類未歸類檔</button>
+      <input type="file" id="pick-files" class="hidden" multiple>
+      <input type="file" id="pick-folder" class="hidden" webkitdirectory directory multiple>
+    </div>
+    <div class="drop" id="drop">
+      <strong data-i18n="card2.dropTitle">把檔案或整個資料夾拖到這裡</strong>
+      <span data-i18n="card2.dropText">或使用上方按鈕選擇（支援 .pdf／.docx／.jpg 等各種格式；單檔超過 200MB 會略過雜湊計算）</span>
+    </div>
+    <div class="kv" id="file-stats"></div>
+    <div id="file-list" style="margin-top:6px"></div>
+  </section>
+
+  <section class="card">
+    <h2><span class="num">3</span><span data-i18n="card3.title">缺件檢查</span></h2>
+    <p class="desc" data-i18n="card3.desc">🟢 已備妥　🔴 缺件（必繳）　⚪ 選繳未附。完成度只計必繳項目。</p>
+    <div id="check-summary" class="kv"></div>
+    <div id="check-list" style="margin-top:10px"></div>
+  </section>
+
+  <section class="card">
+    <h2><span class="num">4</span><span data-i18n="card4.title">匯出繳件清單</span></h2>
+    <p class="desc" data-i18n="card4.desc">清單含各包項目狀態、缺件彙總、手寫標記、內容重複提醒、建議資料夾結構與檔案雜湊明細。</p>
+    <div class="toolbar">
+      <label class="small muted" style="margin:0" for="export-lang" data-i18n="card4.langLabel">清單語言</label>
+      <select id="export-lang" style="width:auto;min-width:150px;min-height:38px" data-i18n-aria="card4.langAria" aria-label="匯出清單使用的語言">
+        <option value="zh" data-i18n="lang.zh">繁體中文</option>
+        <option value="en" data-i18n="lang.en">English</option>
+      </select>
+    </div>
+    <div class="toolbar">
+      <button class="btn primary" id="btn-md" data-i18n="card4.md">下載 Markdown（.md）</button>
+      <button class="btn primary" id="btn-csv" data-i18n="card4.csv">下載 CSV（Excel 可開）</button>
+      <button class="btn" id="btn-copy-md" data-i18n="card4.copyMd">複製 Markdown 文字</button>
+      <button class="btn" id="btn-copy-tree" data-i18n="card4.copyTree">複製建議資料夾結構</button>
+    </div>
+    <pre class="preview" id="preview">（按上方按鈕即可匯出；這裡會同步顯示清單內容，方便手動複製）</pre>
+  </section>
+
+  <section class="card">
+    <h2><span class="num">5</span><span data-i18n="card5.title">設定保存與備份</span></h2>
+    <p class="desc" data-i18n="card5.desc">申請包、項目、手寫標記與稿紙文字會自動存在這台裝置的瀏覽器（localStorage），下次打開自動接續。換裝置請用「匯出設定 JSON」帶走。</p>
+    <div class="toolbar">
+      <button class="btn" id="btn-export-json" data-i18n="card5.export">匯出設定 JSON</button>
+      <button class="btn" id="btn-import-json" data-i18n="card5.import">匯入設定 JSON</button>
+      <button class="btn danger" id="btn-reset" data-i18n="card5.reset">清空全部資料</button>
+      <input type="file" id="import-json" class="hidden" accept=".json,application/json">
+    </div>
+    <div class="kv"><span class="k" id="save-hint">—</span></div>
+    <p class="small muted" style="margin-top:10px" data-i18n-html="card5.note">注意：為保護隱私，本工具<b>不保存檔案內容</b>，只保存檔名、大小、相對路徑與 SHA-256 雜湊值。重新整理網頁後若要重新比對檔案內容，需再次選擇檔案。</p>
+  </section>
+
+</main>
+<footer data-i18n="app.footer">書審資料包產生器・單一 HTML 檔案・純前端離線可用・繁中／English 雙語介面</footer>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<div id="sheet-modal" class="sheet-modal hidden" role="dialog" aria-modal="true" data-i18n-aria="sheet.aria" aria-label="手寫稿紙產生器">
+  <div class="sheet-ui">
+    <div class="sheet-head">
+      <h3 id="sheet-title">手寫稿紙</h3>
+      <div class="toolbar" style="margin:0">
+        <button class="btn primary" id="sheet-print" data-i18n="sheet.print">列印／存成 PDF</button>
+        <button class="btn" id="sheet-clear" data-i18n="sheet.clear">清空文字</button>
+        <button class="btn" id="sheet-close" data-i18n="sheet.close">關閉</button>
+      </div>
+    </div>
+    <div class="sheet-body">
+      <div class="sheet-left">
+        <label class="fld"><span data-i18n="sheet.textLabel">稿紙文字（可直接貼上）</span>
+          <textarea id="sheet-text" data-i18n-ph="sheet.textPh" placeholder="把你的自傳或學習計畫貼在這裡，下方會即時產生 A4 稿紙預覽。"></textarea>
+        </label>
+        <div class="sheet-grid2">
+          <label class="fld"><span data-i18n="sheet.type">稿紙樣式</span>
+            <select id="sheet-type">
+              <option value="grid" data-i18n="sheet.type.grid">方格紙</option>
+              <option value="lines" data-i18n="sheet.type.lines">橫線紙</option>
+              <option value="blank" data-i18n="sheet.type.blank">空白紙</option>
+            </select>
+          </label>
+          <label class="fld"><span data-i18n="sheet.cols">每行字數</span>
+            <select id="sheet-cols">
+              <option value="20">20</option>
+              <option value="21">21</option>
+              <option value="22">22</option>
+              <option value="23">23</option>
+              <option value="24">24</option>
+            </select>
+          </label>
+          <label class="fld"><span data-i18n="sheet.spacing">行距</span>
+            <select id="sheet-spacing">
+              <option value="1">1.0</option>
+              <option value="1.15">1.15</option>
+              <option value="1.3">1.3</option>
+              <option value="1.5">1.5</option>
+            </select>
+          </label>
+          <label class="fld"><span data-i18n="sheet.limit">字數上限（超過警示）</span>
+            <input type="number" id="sheet-limit" min="0" max="100000" step="50" value="1000">
+          </label>
+        </div>
+        <label class="chkbox">
+          <input type="checkbox" id="sheet-font-preview">
+          <span data-i18n="sheet.fontPreview">手寫字型預覽（用系統楷體／手寫字型渲染）</span>
+        </label>
+        <label class="fld"><span data-i18n="sheet.font">字型（含 macOS／Windows 楷體與 fallback）</span>
+          <select id="sheet-font"></select>
+        </label>
+        <label class="fld"><span data-i18n="sheet.fontSize">字級（占格子比例）</span>
+          <input type="range" id="sheet-ratio" min="60" max="95" step="1" value="74">
+        </label>
+        <div class="kv sheet-stat" id="sheet-stat"></div>
+        <div id="sheet-warn"></div>
+        <p class="sheet-note" data-i18n="sheet.note">稿紙為 A4 直式（210×297mm）、上下左右各留 15mm 邊界；列印時只會印出稿紙本身，不含介面。可用瀏覽器列印功能選擇「另存為 PDF」。文字只存在你的瀏覽器本機。</p>
+      </div>
+      <div class="sheet-right">
+        <div class="sheet-pages" id="sheet-pages"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ===================== 常數 ===================== */
+var LS_KEY = 'portfolio_planner_tw_v1';
+var LANG_KEY = 'portfolio_planner_tw_lang';
+var EXPORT_LANG_KEY = 'portfolio_planner_tw_export_lang';
+var MAX_HASH_BYTES = 200 * 1024 * 1024;
+var DEFAULTS = [
+  {name:'個人資料表', nameEn:'Personal Information Form', required:true,
+   keywords:['個人資料表','個人資料','資料表','簡歷','履歷','resume','cv','profile'],
+   keywordsEn:['personal information','personal data','form','profile','resume','cv']},
+  {name:'成績單', nameEn:'Transcript', required:true,
+   keywords:['成績單','成績','在校成績','歷年成績','transcript'],
+   keywordsEn:['transcript','academic record','grades']},
+  {name:'操行證明／獎懲證明', nameEn:'Conduct Record', required:true,
+   keywords:['操行','獎懲','德行','獎懲證明'], keywordsEn:['conduct','disciplinary record','behavior']},
+  {name:'自傳', nameEn:'Autobiography', required:true,
+   keywords:['自傳','自述','autobiography'], keywordsEn:['autobiography','personal statement','about me']},
+  {name:'學習計畫／讀書計畫', nameEn:'Study Plan', required:true,
+   keywords:['學習計畫','學習計劃','讀書計畫','讀書計劃','申請動機','studyplan','study plan'],
+   keywordsEn:['study plan','statement of purpose','motivation']},
+  {name:'推薦函', nameEn:'Recommendation Letter', required:true,
+   keywords:['推薦函','推薦信','推薦','recommend','reference'],
+   keywordsEn:['recommendation','reference letter','reference']},
+  {name:'其他有利資料', nameEn:'Other Supporting Documents', required:false,
+   keywords:['證明','證書','證照','獲獎','獎狀','檢定','競賽','研習','營隊','實習','專題','作品','certificate','award','contest','competition'],
+   keywordsEn:['certificate','award','contest','competition','portfolio','internship','project']}
+];
+
+/* ===================== 多語言 ===================== */
+function readLang(key){
+  try{ return localStorage.getItem(key) === 'en' ? 'en' : 'zh'; }catch(e){ return 'zh'; }
+}
+function writeLang(key, v){
+  try{ localStorage.setItem(key, v); }catch(e){}
+}
+var LANG = readLang(LANG_KEY);
+var EXPORT_LANG = readLang(EXPORT_LANG_KEY);
+
+var I18N = {
+  zh:{
+    'app.title':'書審資料包產生器',
+    'app.sub':'整理備審（書審）資料、檢查缺件、產生繳件清單與建議資料夾結構',
+    'app.privacy':'🔒 全程在你的瀏覽器本機運算，檔案不會上傳到任何伺服器，可離線使用',
+    'app.footer':'書審資料包產生器・單一 HTML 檔案・純前端離線可用・繁中／English 雙語介面',
+    'app.noscript':'本工具需要瀏覽器允許執行 JavaScript 才能運作。',
+    'app.docTitle':'書審資料包產生器',
+    'lang.aria':'語言切換',
+    'lang.zh':'繁體中文',
+    'lang.en':'English',
+    'lang.switched':'介面語言已切換為繁體中文',
+    'exportLang.changed':'清單匯出語言：{lang}',
+    'card0.title':'30 秒上手',
+    'card0.desc':'跟著下面七步做完，就有一份可用的繳件清單。右上角可切換繁體中文／English。第一次用建議先按「載入示範」看看效果。',
+    'card0.summary':'使用說明（點標題可收合）',
+    'card0.li1':'<b>建立申請包</b>：在「① 申請包與應繳項目」填校名、系組，按「新增申請包」；每一間學校／每個系組都建一個申請包。',
+    'card0.li2':'<b>設定應繳項目</b>：預設已含常見七項（個人資料表、成績單、操行證明、自傳、學習計畫、推薦函、其他有利資料），可自由改名、刪除、加新項目，並用「必繳／選繳」勾選區分。',
+    'card0.li3':'<b>選檔或拖檔</b>：把資料夾或檔案拖進「②」的虛線框，或按「選擇檔案」「選擇整個資料夾」。系統會依檔名關鍵字<b>自動建議</b>歸到哪個項目。',
+    'card0.li4':'<b>手動調整歸類</b>：每一列檔案右邊有兩個下拉選單，可改「申請包」與「項目」；不確定就先留「未歸類」。',
+    'card0.li5':'<b>看缺件紅燈</b>：「③ 缺件檢查」會用紅燈標出還沒備妥的必繳項目，並算出完成度。',
+    'card0.li6':'<b>匯出清單</b>：「④ 匯出」可下載 Markdown／CSV，或複製建議的資料夾結構，照著把檔案放進資料夾即可；匯出時可選中文或英文標題。',
+    'card0.li7':'<b>寫手寫稿紙</b>：需要手寫的項目（如自傳、學習計畫）在「①」勾選「需手寫」，再按該列的「稿紙」開啟稿紙產生器；貼上文字即可產生 A4 方格／橫線／空白稿紙，附字數行數頁數統計，並可直接列印或存成 PDF。',
+    'card0.note':'重要觀念：瀏覽器基於安全限制，<b>不能</b>自動搬移你電腦裡的檔案，也<b>讀不到完整磁碟路徑</b>。本工具負責「規劃＋檢查＋開清單」，實際搬檔請你自己（或用檔案管理工具）按清單操作。',
+    'card1.title':'申請包與應繳項目',
+    'card1.desc':'每一間學校／每個系組建立一個申請包，各自設定自己的應繳項目清單。需要手寫的項目請勾選「需手寫」。',
+    'card1.tplAria':'新增申請包時使用的範本',
+    'card1.tplDefault':'範本：常見七項（建議）',
+    'card1.tplBlank':'範本：空白（自己逐項新增）',
+    'card1.add':'＋ 新增申請包',
+    'card1.demo':'載入示範',
+    'card2.title':'檔案歸類',
+    'card2.desc':'拖放檔案／資料夾進來，系統會依檔名關鍵字自動建議歸類；也可以手動改。檔案只在本機讀取，不會上傳。',
+    'card2.assignAria':'匯入檔案時優先歸入哪個申請包',
+    'card2.pickFiles':'選擇檔案',
+    'card2.pickFolder':'選擇整個資料夾',
+    'card2.autoAssign':'重新自動歸類未歸類檔',
+    'card2.dropTitle':'把檔案或整個資料夾拖到這裡',
+    'card2.dropText':'或使用上方按鈕選擇（支援 .pdf／.docx／.jpg 等各種格式；單檔超過 200MB 會略過雜湊計算）',
+    'card3.title':'缺件檢查',
+    'card3.desc':'🟢 已備妥　🔴 缺件（必繳）　⚪ 選繳未附。完成度只計必繳項目。',
+    'card4.title':'匯出繳件清單',
+    'card4.desc':'清單含各包項目狀態、缺件彙總、手寫標記、內容重複提醒、建議資料夾結構與檔案雜湊明細。',
+    'card4.langLabel':'清單語言',
+    'card4.langAria':'匯出清單使用的語言',
+    'card4.md':'下載 Markdown（.md）',
+    'card4.csv':'下載 CSV（Excel 可開）',
+    'card4.copyMd':'複製 Markdown 文字',
+    'card4.copyTree':'複製建議資料夾結構',
+    'card4.preview':'（按上方按鈕即可匯出；這裡會同步顯示清單內容，方便手動複製）',
+    'card5.title':'設定保存與備份',
+    'card5.desc':'申請包、項目、手寫標記與稿紙文字會自動存在這台裝置的瀏覽器（localStorage），下次打開自動接續。換裝置請用「匯出設定 JSON」帶走。',
+    'card5.export':'匯出設定 JSON',
+    'card5.import':'匯入設定 JSON',
+    'card5.reset':'清空全部資料',
+    'card5.note':'注意：為保護隱私，本工具<b>不保存檔案內容</b>，只保存檔名、大小、相對路徑與 SHA-256 雜湊值。重新整理網頁後若要重新比對檔案內容，需再次選擇檔案。',
+
+    'pkg.unnamed':'未命名申請包',
+    'pkg.empty':'尚未建立申請包。請按上方「＋ 新增申請包」，或按「載入示範」先看看效果。',
+    'pkg.head':'申請包 {n}：',
+    'pkg.badge.done':'必繳完成 {done}/{total}（{pct}%）',
+    'pkg.badge.none':'未設必繳項目',
+    'pkg.school':'校名',
+    'pkg.program':'系組／學程',
+    'pkg.note':'備註（選填）',
+    'pkg.ph.school':'例如：清華大學',
+    'pkg.ph.program':'例如：資訊工程學系碩士班',
+    'pkg.ph.note':'例如：報名序號、截止日',
+    'pkg.itemsEmpty':'這個申請包還沒有項目，請按下方「＋ 新增項目」或「＋ 匯入預設範本項目」。',
+    'pkg.addItem':'＋ 新增項目',
+    'pkg.addDefaults':'＋ 匯入預設範本項目',
+    'pkg.del':'刪除這個申請包',
+    'item.req':'必繳',
+    'item.hand':'需手寫',
+    'item.handTitle':'勾選代表這個項目要用手寫稿紙繳交',
+    'item.ph.name':'項目名稱',
+    'item.ph.kw':'檔名關鍵字（逗號分隔）',
+    'item.up':'↑ 上移',
+    'item.down':'↓ 下移',
+    'item.del':'刪除',
+    'item.delTitle':'刪除項目',
+    'item.sheet':'稿紙',
+    'item.sheetTitle':'開啟這個項目的手寫稿紙產生器',
+    'item.handPill':'需手寫',
+
+    'assign.auto':'自動判斷（依檔名比對所有申請包）',
+    'assign.prefer':'優先歸入：',
+
+    'files.stat.total':'檔案 {n} 個',
+    'files.stat.assigned':'已歸類 {n} 個',
+    'files.stat.unassigned':'未歸類 {n} 個',
+    'files.stat.dup':'內容重複 {n} 組',
+    'files.stat.nohash':'未取得雜湊 {n} 個',
+    'files.empty':'尚未加入檔案。拖放檔案或資料夾到上方虛線框即可。',
+    'files.pill.dup':'內容重複',
+    'files.pill.nohash':'未計算雜湊',
+    'files.sel.none':'（未歸類）',
+    'files.sel.item':'（選項目）',
+    'files.reqSuffix':'（必繳）',
+    'files.optSuffix':'（選繳）',
+    'files.remove':'移除',
+
+    'chk.stat.pkg':'申請包 {n} 個',
+    'chk.stat.req':'必繳項目 {done}/{total} 已備（{pct}%）',
+    'chk.stat.reqNone':'尚無必繳項目',
+    'chk.stat.missing':'缺件 {n} 項',
+    'chk.stat.dup':'內容重複 {n} 組',
+    'chk.empty':'尚無申請包，請先在「① 申請包與應繳項目」建立。',
+    'chk.th.light':'燈號',
+    'chk.th.item':'項目',
+    'chk.th.cat':'類別',
+    'chk.th.files':'已備檔案',
+    'chk.ok':'已備 {n} 檔',
+    'chk.missing':'缺件',
+    'chk.optMissing':'選繳未附',
+    'chk.req':'必繳',
+    'chk.opt':'選繳',
+    'chk.todo':'待補：',
+
+    'toast.hashBusy':'正在計算檔案雜湊，請稍候再選檔',
+    'toast.noFile':'沒有可加入的檔案（可能都是隱藏／暫存檔）',
+    'toast.added':'已加入 {n} 個檔案',
+    'toast.hashDoing':'雜湊計算中 {i}/{n}…',
+    'toast.hashFail':'部分檔案雜湊計算失敗，其餘仍可使用',
+    'toast.pkgAdded':'已新增申請包 {n}',
+    'toast.demoAdded':'已載入示範資料（1 個申請包 / 2 個示範項目）',
+    'toast.defaultsAdded':'已加入 {n} 個預設項目',
+    'toast.defaultsExist':'預設項目已存在於這個申請包',
+    'toast.autoAssigned':'已自動歸類 {n} 個檔案',
+    'toast.autoNone':'沒有可自動歸類的檔案',
+    'toast.mdDone':'已下載 Markdown 清單（{lang}）',
+    'toast.csvDone':'已下載 CSV 清單（{lang}）',
+    'toast.copyOk':'已複製到剪貼簿',
+    'toast.copyFail':'無法自動複製，請在下方文字區手動選取複製',
+    'toast.exportJson':'已匯出設定 JSON',
+    'toast.importOk':'設定匯入完成',
+    'toast.importFail':'匯入失敗：JSON 格式不正確',
+    'toast.resetDone':'已清空全部資料',
+    'confirm.delPkg':'確定要刪除「{name}」這個申請包嗎？（檔案紀錄會回到未歸類，不會動到你電腦裡的檔案）',
+    'confirm.delItem':'確定刪除項目「{name}」嗎？此項目下的檔案會回到未歸類。',
+    'confirm.reset':'確定要清空本工具的全部資料嗎？（申請包、項目、檔案紀錄都會清掉；不會動到你電腦裡的檔案，此動作無法復原）',
+    'confirm.import':'匯入會覆蓋目前在這台裝置上的設定（{p} 個申請包 / {f} 個檔案紀錄），確定要繼續嗎？',
+    'save.loaded':'已載入本機設定（{p} 個申請包 / {f} 個檔案紀錄）',
+    'save.saved':'已自動保存（{t}）',
+    'save.fail':'⚠️ 無法保存到瀏覽器（可能空間不足或使用無痕模式），請先「匯出設定 JSON」備份',
+    'hash.tooBig':'檔案過大（>200MB），未計算雜湊',
+    'hash.readFail':'無法讀取檔案內容（可能沒有權限）',
+    'listSep':'、',
+
+    'x.title':'書審（備審）繳件清單',
+    'x.generatedAt':'產生時間：',
+    'x.pkgCount':'申請包數量：',
+    'x.fileCount':'檔案總數：',
+    'x.overall':'必繳項目完成度：',
+    'x.missingCount':'缺件項目數：',
+    'x.dupGroups':'內容重複組數：',
+    'x.sec1':'一、各申請包應繳項目',
+    'x.noPkg':'（尚未建立申請包）',
+    'x.pkgDone':'必繳完成度：',
+    'x.noteLabel':'備註：',
+    'x.th.no':'#',
+    'x.th.item':'項目',
+    'x.th.cat':'類別',
+    'x.th.hand':'手寫',
+    'x.th.state':'狀態',
+    'x.th.files':'已備檔案',
+    'x.handYes':'需手寫',
+    'x.handNo':'—',
+    'x.state.ok':'✅ 已備',
+    'x.state.missing':'❌ 缺件',
+    'x.state.opt':'－ 選繳未附',
+    'x.req':'必繳',
+    'x.opt':'選繳',
+    'x.sec2':'二、缺件彙總',
+    'x.allReady':'所有必繳項目皆已備妥。',
+    'x.sec3':'三、內容重複提醒（SHA-256 相同）',
+    'x.noDup':'未偵測到內容完全相同的檔案。',
+    'x.dupTip':'提醒：若同一份內容同時出現在不同學校的申請包，請確認是否符合該校規定（部分學校要求各校版本不得雷同）。',
+    'x.unassigned':'（未歸類）',
+    'x.sec4':'四、建議資料夾結構',
+    'x.sec5':'五、檔案明細',
+    'x.noFiles':'（尚未加入檔案）',
+    'x.th.name':'檔名',
+    'x.th.size':'大小',
+    'x.th.path':'相對路徑',
+    'x.th.sha':'SHA-256（前12碼）',
+    'x.th.where':'歸屬',
+    'x.where.none':'未歸類',
+    'x.where.itemNone':'未指定項目',
+    'x.hashNone':'（未計算）',
+    'x.footer':'本清單由「書審資料包產生器」於本機產生，未上傳任何檔案。',
+    'x.tree.root':'書審資料包/',
+    'x.tree.noPkg':'（尚未建立申請包）',
+    'x.tree.noItems':'（尚未設定項目）',
+    'x.tree.placeHere':'（放這裡）',
+    'x.tree.todo':'  ← 尚未備妥',
+    'x.csv.pkg':'申請包',
+    'x.csv.school':'校名',
+    'x.csv.program':'系組',
+    'x.csv.item':'項目',
+    'x.csv.cat':'類別',
+    'x.csv.hand':'手寫',
+    'x.csv.state':'狀態',
+    'x.csv.file':'檔名',
+    'x.csv.size':'大小',
+    'x.csv.path':'相對路徑',
+    'x.csv.sha':'SHA256前12碼',
+
+    'sheet.open':'手寫稿紙產生器',
+    'sheet.aria':'手寫稿紙產生器',
+    'sheet.title.free':'手寫稿紙（自由書寫）',
+    'sheet.print':'列印／存成 PDF',
+    'sheet.clear':'清空文字',
+    'sheet.close':'關閉',
+    'sheet.textLabel':'稿紙文字（可直接貼上）',
+    'sheet.textPh':'把你的自傳或學習計畫貼在這裡，下方會即時產生 A4 稿紙預覽。',
+    'sheet.type':'稿紙樣式',
+    'sheet.type.grid':'方格紙',
+    'sheet.type.lines':'橫線紙',
+    'sheet.type.blank':'空白紙',
+    'sheet.cols':'每行字數',
+    'sheet.spacing':'行距',
+    'sheet.limit':'字數上限（超過警示）',
+    'sheet.fontPreview':'手寫字型預覽（用系統楷體／手寫字型渲染）',
+    'sheet.font':'字型（含 macOS／Windows 楷體與 fallback）',
+    'sheet.fontSize':'字級（占格子比例）',
+    'sheet.note':'稿紙為 A4 直式（210×297mm）、上下左右各留 15mm 邊界；列印時只會印出稿紙本身，不含介面。可用瀏覽器列印功能選擇「另存為 PDF」。文字只存在你的瀏覽器本機。',
+    'sheet.stat.chars':'字數 {n}',
+    'sheet.stat.lines':'行數 {n}',
+    'sheet.stat.pages':'頁數 {n}',
+    'sheet.stat.limit':'上限 {n} 字',
+    'sheet.stat.noLimit':'未設上限',
+    'sheet.warn.over':'已超過字數上限：{n} / {limit} 字（超出 {over} 字），請刪減內容或調高上限。',
+    'sheet.ok.under':'字數 {n} / 上限 {limit} 字，尚可再寫 {left} 字。',
+    'sheet.ok.free':'目前 {n} 字（未設上限）。',
+    'sheet.empty':'（尚未輸入文字，貼上內容後這裡會顯示 A4 稿紙預覽）',
+    'sheet.forItem':'稿紙－{pkg}／{item}',
+    'sheet.confirm.clear':'確定要清空這份稿紙的文字嗎？',
+    'sheet.toast.cleared':'已清空稿紙文字',
+    'sheet.toast.saved':'稿紙文字已保存',
+    'sheet.printTip':'已套用列印樣式，請在列印視窗選擇「另存為 PDF」即可存檔。',
+    'sheet.font.kai':'標楷體／楷體（建議）',
+    'sheet.font.hand':'手寫體（行楷／手寫風）',
+    'sheet.font.round':'圓體',
+    'sheet.font.sans':'黑體（對照用）'
+  },
+  en:{
+    'app.title':'Portfolio Package Generator',
+    'app.sub':'Organize application documents, check what is missing, and produce a submission checklist with a suggested folder structure',
+    'app.privacy':'🔒 Everything runs locally in your browser. No file is ever uploaded, and it works offline',
+    'app.footer':'Portfolio Package Generator · single HTML file · offline, front-end only · Chinese / English interface',
+    'app.noscript':'This tool needs JavaScript enabled in your browser.',
+    'app.docTitle':'Portfolio Package Generator',
+    'lang.aria':'Language switch',
+    'lang.zh':'繁體中文',
+    'lang.en':'English',
+    'lang.switched':'Interface language switched to English',
+    'exportLang.changed':'Checklist export language: {lang}',
+    'card0.title':'30-Second Quick Start',
+    'card0.desc':'Follow the seven steps below to get a usable submission checklist. Use the switch at the top right to change between 繁體中文 and English. If this is your first time, click Load Sample first.',
+    'card0.summary':'How to use (click the title to collapse)',
+    'card0.li1':'<b>Create a package</b>: in section 1, fill in the school and program, then click Add Package. Create one package per school or per program.',
+    'card0.li2':'<b>Set the required items</b>: seven common items are provided by default (personal form, transcript, conduct record, autobiography, study plan, recommendation letter, other supporting documents). Rename, delete or add items freely, and use the Required / Optional checkbox to tell them apart.',
+    'card0.li3':'<b>Pick or drop files</b>: drag a folder or files onto the dashed box in section 2, or click Choose Files / Choose Folder. The tool suggests a category automatically from the file name keywords.',
+    'card0.li4':'<b>Adjust the matching</b>: each file row has two dropdowns for package and item. If unsure, just leave it as unassigned.',
+    'card0.li5':'<b>Watch the red lights</b>: section 3 marks required items that are not ready yet with a red light and shows your progress.',
+    'card0.li6':'<b>Export the checklist</b>: section 4 downloads Markdown / CSV or copies the suggested folder structure. You can choose Chinese or English headings when exporting.',
+    'card0.li7':'<b>Write on manuscript paper</b>: tick Need handwriting for items such as the autobiography or study plan, then click Sheet on that row to open the manuscript paper generator. Paste your text to get A4 grid / ruled / blank paper with character, line and page counts, ready to print or save as PDF.',
+    'card0.note':'Important: for security reasons a browser <b>cannot</b> move files on your computer, and it <b>cannot read full disk paths</b>. This tool plans, checks and prints the checklist; please move the actual files yourself (or with a file manager) following that checklist.',
+    'card1.title':'Packages and Required Items',
+    'card1.desc':'Create one package per school or program, each with its own list of required items. Tick Need handwriting for items you must write by hand.',
+    'card1.tplAria':'Template used when adding a package',
+    'card1.tplDefault':'Template: seven common items (recommended)',
+    'card1.tplBlank':'Template: blank (add items yourself)',
+    'card1.add':'+ Add package',
+    'card1.demo':'Load sample',
+    'card2.title':'File Matching',
+    'card2.desc':'Drop files or folders here and the tool suggests a category from the file name keywords. You can always change it. Files are read locally only and never uploaded.',
+    'card2.assignAria':'Package to prefer when importing files',
+    'card2.pickFiles':'Choose files',
+    'card2.pickFolder':'Choose folder',
+    'card2.autoAssign':'Re-run auto matching',
+    'card2.dropTitle':'Drop files or a whole folder here',
+    'card2.dropText':'or use the buttons above (supports .pdf / .docx / .jpg and many more; files over 200MB skip hashing)',
+    'card3.title':'Missing Item Check',
+    'card3.desc':'🟢 ready　🔴 missing (required)　⚪ optional, not attached. Progress counts required items only.',
+    'card4.title':'Export Checklist',
+    'card4.desc':'The checklist covers item status per package, a missing item summary, handwriting marks, duplicate content warnings, the suggested folder structure and the file hash list.',
+    'card4.langLabel':'Checklist language',
+    'card4.langAria':'Language used for the exported checklist',
+    'card4.md':'Download Markdown (.md)',
+    'card4.csv':'Download CSV (opens in Excel)',
+    'card4.copyMd':'Copy Markdown text',
+    'card4.copyTree':'Copy suggested folder structure',
+    'card4.preview':'Click a button above to export; the checklist content also appears here for manual copying.',
+    'card5.title':'Saving and Backup',
+    'card5.desc':'Packages, items, handwriting marks and sheet text are saved automatically in this device browser (localStorage) and restored next time. To move to another device, use Export settings JSON.',
+    'card5.export':'Export settings JSON',
+    'card5.import':'Import settings JSON',
+    'card5.reset':'Clear all data',
+    'card5.note':'Note: to protect your privacy this tool <b>does not store file contents</b>, only file names, sizes, relative paths and SHA-256 hashes. After reloading the page, select the files again if you want to re-compare their contents.',
+
+    'pkg.unnamed':'Untitled package',
+    'pkg.empty':'No package yet. Click + Add package above, or Load sample to see how it works.',
+    'pkg.head':'Package {n}: ',
+    'pkg.badge.done':'Required done {done}/{total} ({pct}%)',
+    'pkg.badge.none':'No required items',
+    'pkg.school':'School',
+    'pkg.program':'Program / Department',
+    'pkg.note':'Note (optional)',
+    'pkg.ph.school':'e.g. National Tsing Hua University',
+    'pkg.ph.program':'e.g. M.S. in Computer Science',
+    'pkg.ph.note':'e.g. application number, deadline',
+    'pkg.itemsEmpty':'This package has no items yet. Use + Add item or + Import default items below.',
+    'pkg.addItem':'+ Add item',
+    'pkg.addDefaults':'+ Import default items',
+    'pkg.del':'Delete this package',
+    'item.req':'Required',
+    'item.hand':'Need handwriting',
+    'item.handTitle':'Tick if this item must be submitted as handwritten manuscript paper',
+    'item.ph.name':'Item name',
+    'item.ph.kw':'File name keywords (comma separated)',
+    'item.up':'↑ Up',
+    'item.down':'↓ Down',
+    'item.del':'Delete',
+    'item.delTitle':'Delete item',
+    'item.sheet':'Sheet',
+    'item.sheetTitle':'Open the manuscript paper generator for this item',
+    'item.handPill':'Handwriting',
+
+    'assign.auto':'Automatic (match file names against all packages)',
+    'assign.prefer':'Prefer package: ',
+
+    'files.stat.total':'{n} files',
+    'files.stat.assigned':'{n} assigned',
+    'files.stat.unassigned':'{n} unassigned',
+    'files.stat.dup':'{n} duplicate groups',
+    'files.stat.nohash':'{n} without hash',
+    'files.empty':'No files yet. Drop files or a folder onto the dashed box above.',
+    'files.pill.dup':'duplicate content',
+    'files.pill.nohash':'no hash',
+    'files.sel.none':'(unassigned)',
+    'files.sel.item':'(choose item)',
+    'files.reqSuffix':'(required)',
+    'files.optSuffix':'(optional)',
+    'files.remove':'Remove',
+
+    'chk.stat.pkg':'{n} packages',
+    'chk.stat.req':'Required items ready {done}/{total} ({pct}%)',
+    'chk.stat.reqNone':'No required items yet',
+    'chk.stat.missing':'{n} missing',
+    'chk.stat.dup':'{n} duplicate groups',
+    'chk.empty':'No package yet. Create one in section 1 first.',
+    'chk.th.light':'Status',
+    'chk.th.item':'Item',
+    'chk.th.cat':'Type',
+    'chk.th.files':'Files ready',
+    'chk.ok':'{n} file(s)',
+    'chk.missing':'Missing',
+    'chk.optMissing':'Optional, not attached',
+    'chk.req':'Required',
+    'chk.opt':'Optional',
+    'chk.todo':'To prepare:',
+
+    'toast.hashBusy':'Hashing files, please wait before adding more',
+    'toast.noFile':'No file could be added (they may all be hidden or temporary files)',
+    'toast.added':'Added {n} file(s)',
+    'toast.hashDoing':'Hashing {i}/{n}…',
+    'toast.hashFail':'Some files could not be hashed, the rest still work',
+    'toast.pkgAdded':'Package {n} added',
+    'toast.demoAdded':'Sample data loaded (1 package / 2 sample items)',
+    'toast.defaultsAdded':'{n} default items added',
+    'toast.defaultsExist':'Default items already exist in this package',
+    'toast.autoAssigned':'{n} file(s) matched automatically',
+    'toast.autoNone':'Nothing to match automatically',
+    'toast.mdDone':'Markdown checklist downloaded ({lang})',
+    'toast.csvDone':'CSV checklist downloaded ({lang})',
+    'toast.copyOk':'Copied to clipboard',
+    'toast.copyFail':'Could not copy automatically, please select the text below manually',
+    'toast.exportJson':'Settings JSON exported',
+    'toast.importOk':'Settings imported',
+    'toast.importFail':'Import failed: invalid JSON',
+    'toast.resetDone':'All data cleared',
+    'confirm.delPkg':'Delete package {name}? (Its file records will become unassigned; nothing on your computer is touched)',
+    'confirm.delItem':'Delete item {name}? Files under it will become unassigned.',
+    'confirm.reset':'Clear all data in this tool? (Packages, items and file records will be removed; nothing on your computer is touched and this cannot be undone)',
+    'confirm.import':'Importing overwrites the settings on this device ({p} package(s) / {f} file record(s)). Continue?',
+    'save.loaded':'Local settings loaded ({p} package(s) / {f} file record(s))',
+    'save.saved':'Saved automatically ({t})',
+    'save.fail':'⚠️ Could not save to the browser (storage full or private mode). Please use Export settings JSON to back up first.',
+    'hash.tooBig':'File too large (>200MB), hash not computed',
+    'hash.readFail':'Could not read the file (permission?)',
+    'listSep':', ',
+
+    'x.title':'Application Document Checklist',
+    'x.generatedAt':'Generated at: ',
+    'x.pkgCount':'Packages: ',
+    'x.fileCount':'Files: ',
+    'x.overall':'Required items ready: ',
+    'x.missingCount':'Missing items: ',
+    'x.dupGroups':'Duplicate groups: ',
+    'x.sec1':'1. Required items by package',
+    'x.noPkg':'(no package yet)',
+    'x.pkgDone':'Required ready: ',
+    'x.noteLabel':'Note: ',
+    'x.th.no':'#',
+    'x.th.item':'Item',
+    'x.th.cat':'Type',
+    'x.th.hand':'Handwriting',
+    'x.th.state':'Status',
+    'x.th.files':'Files ready',
+    'x.handYes':'Handwrite',
+    'x.handNo':'—',
+    'x.state.ok':'✅ Ready',
+    'x.state.missing':'❌ Missing',
+    'x.state.opt':'– Not attached (optional)',
+    'x.req':'Required',
+    'x.opt':'Optional',
+    'x.sec2':'2. Missing items',
+    'x.allReady':'All required items are ready.',
+    'x.sec3':'3. Duplicate content notice (identical SHA-256)',
+    'x.noDup':'No files with identical content were detected.',
+    'x.dupTip':'Reminder: if the same content appears in packages for different schools, check each school\'s rules (some require the versions to differ).',
+    'x.unassigned':'(unassigned)',
+    'x.sec4':'4. Suggested folder structure',
+    'x.sec5':'5. File details',
+    'x.noFiles':'(no file added yet)',
+    'x.th.name':'File name',
+    'x.th.size':'Size',
+    'x.th.path':'Relative path',
+    'x.th.sha':'SHA-256 (first 12)',
+    'x.th.where':'Assigned to',
+    'x.where.none':'Unassigned',
+    'x.where.itemNone':'No item selected',
+    'x.hashNone':'(not computed)',
+    'x.footer':'This checklist was generated locally by the Portfolio Package Generator. No file was uploaded.',
+    'x.tree.root':'application-packages/',
+    'x.tree.noPkg':'(no package yet)',
+    'x.tree.noItems':'(no items yet)',
+    'x.tree.placeHere':'(put files here)',
+    'x.tree.todo':'  <- not ready',
+    'x.csv.pkg':'Package',
+    'x.csv.school':'School',
+    'x.csv.program':'Program',
+    'x.csv.item':'Item',
+    'x.csv.cat':'Type',
+    'x.csv.hand':'Handwriting',
+    'x.csv.state':'Status',
+    'x.csv.file':'File name',
+    'x.csv.size':'Size',
+    'x.csv.path':'Relative path',
+    'x.csv.sha':'SHA256 first 12',
+
+    'sheet.open':'Manuscript paper',
+    'sheet.aria':'Manuscript paper generator',
+    'sheet.title.free':'Manuscript paper (free writing)',
+    'sheet.print':'Print / Save as PDF',
+    'sheet.clear':'Clear text',
+    'sheet.close':'Close',
+    'sheet.textLabel':'Sheet text (paste here)',
+    'sheet.textPh':'Paste your autobiography or study plan here; the A4 preview below updates instantly.',
+    'sheet.type':'Paper style',
+    'sheet.type.grid':'Grid paper',
+    'sheet.type.lines':'Ruled paper',
+    'sheet.type.blank':'Blank paper',
+    'sheet.cols':'Characters per line',
+    'sheet.spacing':'Line spacing',
+    'sheet.limit':'Character limit (warn when exceeded)',
+    'sheet.fontPreview':'Handwriting font preview (render with system Kai / handwriting fonts)',
+    'sheet.font':'Font (macOS / Windows Kai fonts with fallbacks)',
+    'sheet.fontSize':'Font size (share of the cell)',
+    'sheet.note':'The sheet is A4 portrait (210×297mm) with 15mm margins. Printing outputs only the paper itself, without the interface. Choose Save as PDF in the browser print dialog. Text stays on your device.',
+    'sheet.stat.chars':'Characters {n}',
+    'sheet.stat.lines':'Lines {n}',
+    'sheet.stat.pages':'Pages {n}',
+    'sheet.stat.limit':'Limit {n}',
+    'sheet.stat.noLimit':'No limit',
+    'sheet.warn.over':'Over the character limit: {n} / {limit} (over by {over}). Shorten the text or raise the limit.',
+    'sheet.ok.under':'{n} / {limit} characters, {left} left.',
+    'sheet.ok.free':'{n} characters (no limit set).',
+    'sheet.empty':'(No text yet. Paste your content to see the A4 preview here.)',
+    'sheet.forItem':'Sheet – {pkg} / {item}',
+    'sheet.confirm.clear':'Clear the text on this sheet?',
+    'sheet.toast.cleared':'Sheet text cleared',
+    'sheet.toast.saved':'Sheet text saved',
+    'sheet.printTip':'Print styles applied. Choose Save as PDF in the print dialog to keep a copy.',
+    'sheet.font.kai':'Kai / BiauKai (recommended)',
+    'sheet.font.hand':'Handwriting style',
+    'sheet.font.round':'Round style',
+    'sheet.font.sans':'Sans-serif (for comparison)'
+  }
+};
+
+function tt(lang, key, vars){
+  var d = I18N[lang] || I18N.zh;
+  var s = (d[key] != null) ? d[key] : (I18N.zh[key] != null ? I18N.zh[key] : key);
+  if(vars){
+    Object.keys(vars).forEach(function(k){
+      s = s.split('{' + k + '}').join(String(vars[k]));
+    });
+  }
+  return s;
+}
+function t(key, vars){ return tt(LANG, key, vars); }
+function tx(key, vars){ return tt(EXPORT_LANG, key, vars); }
+function langLabel(l){ return l === 'en' ? 'English' : '繁體中文'; }
+function defName(d){ return (LANG === 'en' && d.nameEn) ? d.nameEn : d.name; }
+function defKeywords(d){ return (LANG === 'en' && d.keywordsEn) ? d.keywordsEn : d.keywords; }
+function sameKeyword(a, b){
+  var x = String(a || '').trim().toLowerCase(), y = String(b || '').trim().toLowerCase();
+  return x !== '' && x === y;
+}
+function applyI18n(){
+  var els = document.querySelectorAll('[data-i18n]');
+  for(var i=0;i<els.length;i++){ els[i].textContent = t(els[i].getAttribute('data-i18n')); }
+  var htmls = document.querySelectorAll('[data-i18n-html]');
+  for(var j=0;j<htmls.length;j++){ htmls[j].innerHTML = t(htmls[j].getAttribute('data-i18n-html')); }
+  var phs = document.querySelectorAll('[data-i18n-ph]');
+  for(var k=0;k<phs.length;k++){ phs[k].setAttribute('placeholder', t(phs[k].getAttribute('data-i18n-ph'))); }
+  var ars = document.querySelectorAll('[data-i18n-aria]');
+  for(var m=0;m<ars.length;m++){ ars[m].setAttribute('aria-label', t(ars[m].getAttribute('data-i18n-aria'))); }
+  document.documentElement.lang = (LANG === 'en' ? 'en' : 'zh-Hant');
+  try{ document.title = t('app.docTitle'); }catch(e){}
+  markLangButtons();
+}
+function markLangButtons(){
+  var z = document.getElementById('btn-lang-zh'), e = document.getElementById('btn-lang-en');
+  if(z) z.classList.toggle('active', LANG === 'zh');
+  if(e) e.classList.toggle('active', LANG === 'en');
+}
+function setLang(l){
+  LANG = (l === 'en') ? 'en' : 'zh';
+  writeLang(LANG_KEY, LANG);
+  applyI18n();
+  renderAll();
+  renderPreview();
+  syncSheetUI();
+  renderSheet();
+  toast(t('lang.switched'));
+}
+function setExportLang(l){
+  EXPORT_LANG = (l === 'en') ? 'en' : 'zh';
+  writeLang(EXPORT_LANG_KEY, EXPORT_LANG);
+  var sel = document.getElementById('export-lang');
+  if(sel) sel.value = EXPORT_LANG;
+  renderPreview();
+  toast(t('exportLang.changed', {lang: EXPORT_LANG === 'en' ? t('lang.en') : t('lang.zh')}));
+}
+
+/* ===================== 狀態 ===================== */
+var state = loadState();
+var hashBusy = false;
+
+function freshState(){ return {version:1, packages:[], files:[], nextId:1}; }
+
+function loadState(){
+  try{
+    var raw = localStorage.getItem(LS_KEY);
+    if(!raw) return freshState();
+    var o = JSON.parse(raw);
+    if(!o || typeof o !== 'object') return freshState();
+    var s = freshState();
+    s.packages = Array.isArray(o.packages) ? o.packages : [];
+    s.files = Array.isArray(o.files) ? o.files : [];
+    s.nextId = typeof o.nextId === 'number' && o.nextId > 0 ? o.nextId : 1;
+    s.packages.forEach(function(p){
+      p.items = Array.isArray(p.items) ? p.items : [];
+      p.items.forEach(function(it){
+        it.keywords = Array.isArray(it.keywords) ? it.keywords : [];
+        it.required = !!it.required;
+        it.hand = !!it.hand;
+        it.name = String(it.name || '');
+        if(typeof it.nameEn !== 'string') it.nameEn = '';
+      });
+    });
+    s.files.forEach(function(f){
+      if(typeof f.hash !== 'string') f.hash = '';
+      if(typeof f.relPath !== 'string') f.relPath = f.name || '';
+      if(typeof f.text !== 'string') f.text = '';
+    });
+    s.sheetText = (o.sheetText && typeof o.sheetText === 'object') ? o.sheetText : {};
+    s.sheetUI = (o.sheetUI && typeof o.sheetUI === 'object') ? o.sheetUI : {};
+    if(o.sheetOnly) s.sheetOnly = o.sheetOnly;
+    return s;
+  }catch(e){
+    return freshState();
+  }
+}
+
+var saveTimer = null;
+function save(){
+  if(saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 250);
+}
+function saveNow(){
+  try{
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    setSaveHint(t('save.saved', {t: nowStr()}));
+  }catch(e){
+    setSaveHint(t('save.fail'));
+  }
+}
+function setSaveHint(txt){
+  var el = document.getElementById('save-hint');
+  if(el) el.textContent = txt;
+}
+
+/* ===================== 小工具 ===================== */
+function newId(prefix){ return prefix + (state.nextId++); }
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function nowStr(){
+  var d = new Date(), p = function(n){ return (n<10?'0':'') + n; };
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+}
+function fmtSize(n){
+  n = Number(n) || 0;
+  if(n < 1024) return n + ' B';
+  if(n < 1048576) return (n/1024).toFixed(1) + ' KB';
+  if(n < 1073741824) return (n/1048576).toFixed(1) + ' MB';
+  return (n/1073741824).toFixed(2) + ' GB';
+}
+function toast(msg){
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2000);
+}
+function normalizeName(s){
+  return String(s == null ? '' : s)
+    .replace(/\.[a-z0-9]{1,6}$/i, '')
+    .toLowerCase()
+    .replace(/[\s_\-\u2013\u2014()（）\[\]{}【】「」『』.,，、。·:：;；!！?？'"’”]/g, '');
+}
+function pkgLabel(p){
+  var s = (p.school || '').trim();
+  var g = (p.program || '').trim();
+  if(s && g) return s + '｜' + g;
+  if(s) return s;
+  if(g) return g;
+  return t('pkg.unnamed');
+}
+function findPkg(id){
+  for(var i=0;i<state.packages.length;i++){ if(state.packages[i].id === id) return state.packages[i]; }
+  return null;
+}
+function filesOf(pkgId, itemId){
+  return state.files.filter(function(f){ return f.pkgId === pkgId && f.itemId === itemId; });
+}
+function completion(p){
+  var req = p.items.filter(function(i){ return i.required; });
+  var done = req.filter(function(i){ return filesOf(p.id, i.id).length > 0; });
+  var pct = req.length ? Math.round(done.length / req.length * 100) : 100;
+  return {done:done.length, total:req.length, pct:pct};
+}
+function missingItems(p){
+  return p.items.filter(function(i){ return i.required && filesOf(p.id, i.id).length === 0; });
+}
+function dupInfo(){
+  var map = {}, groups = [], flagged = {};
+  state.files.forEach(function(f){
+    if(!f.hash) return;
+    if(!map[f.hash]) map[f.hash] = [];
+    map[f.hash].push(f);
+  });
+  Object.keys(map).forEach(function(h){
+    if(map[h].length > 1){
+      groups.push({hash:h, files:map[h]});
+      map[h].forEach(function(f){ flagged[f.id] = true; });
+    }
+  });
+  return {groups:groups, flagged:flagged};
+}
+
+/* ===================== SHA-256 ===================== */
+function rotr(x,n){ return ((x >>> n) | (x << (32 - n))) >>> 0; }
+function sha256HexPure(bytes){
+  var K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+           0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+           0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+           0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+           0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+           0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+           0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+           0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  var H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  var l = bytes.length;
+  var bitLen = l * 8;
+  var total = Math.ceil((l + 9) / 64) * 64;
+  var buf = new Uint8Array(total);
+  buf.set(bytes);
+  buf[l] = 0x80;
+  var dv = new DataView(buf.buffer);
+  dv.setUint32(total - 4, bitLen >>> 0, false);
+  dv.setUint32(total - 8, Math.floor(bitLen / 4294967296), false);
+  var w = new Uint32Array(64), i, t, a,b,c,d,e,f,g,h,S0,S1,ch,maj,t1,t2;
+  for(i = 0; i < total; i += 64){
+    for(t = 0; t < 16; t++) w[t] = dv.getUint32(i + t*4, false);
+    for(t = 16; t < 64; t++){
+      var w15 = w[t-15], w2 = w[t-2];
+      S0 = (rotr(w15,7) ^ rotr(w15,18) ^ (w15 >>> 3)) >>> 0;
+      S1 = (rotr(w2,17) ^ rotr(w2,19) ^ (w2 >>> 10)) >>> 0;
+      w[t] = (w[t-16] + S0 + w[t-7] + S1) >>> 0;
+    }
+    a=H[0]; b=H[1]; c=H[2]; d=H[3]; e=H[4]; f=H[5]; g=H[6]; h=H[7];
+    for(t = 0; t < 64; t++){
+      S1 = (rotr(e,6) ^ rotr(e,11) ^ rotr(e,25)) >>> 0;
+      ch = ((e & f) ^ ((~e) & g)) >>> 0;
+      t1 = (h + S1 + ch + K[t] + w[t]) >>> 0;
+      S0 = (rotr(a,2) ^ rotr(a,13) ^ rotr(a,22)) >>> 0;
+      maj = ((a & b) ^ (a & c) ^ (b & c)) >>> 0;
+      t2 = (S0 + maj) >>> 0;
+      h = g; g = f; f = e; e = (d + t1) >>> 0;
+      d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+    }
+    H[0]=(H[0]+a)>>>0; H[1]=(H[1]+b)>>>0; H[2]=(H[2]+c)>>>0; H[3]=(H[3]+d)>>>0;
+    H[4]=(H[4]+e)>>>0; H[5]=(H[5]+f)>>>0; H[6]=(H[6]+g)>>>0; H[7]=(H[7]+h)>>>0;
+  }
+  var out = '';
+  for(i = 0; i < 8; i++) out += ('00000000' + H[i].toString(16)).slice(-8);
+  return out;
+}
+function hexOf(buffer){
+  var b = new Uint8Array(buffer), s = '';
+  for(var i=0;i<b.length;i++) s += ('0' + b[i].toString(16)).slice(-2);
+  return s;
+}
+function hashFile(file){
+  if(file.size > MAX_HASH_BYTES) return Promise.resolve({hash:'', note:t('hash.tooBig')});
+  var read = file.arrayBuffer ? file.arrayBuffer() : new Promise(function(res, rej){
+    var fr = new FileReader();
+    fr.onload = function(){ res(fr.result); };
+    fr.onerror = function(){ rej(fr.error); };
+    fr.readAsArrayBuffer(file);
+  });
+  return read.then(function(buf){
+    if(window.crypto && window.crypto.subtle && window.crypto.subtle.digest){
+      return window.crypto.subtle.digest('SHA-256', buf).then(function(d){
+        return {hash: hexOf(d), note:''};
+      }).catch(function(){
+        return {hash: sha256HexPure(new Uint8Array(buf)), note:''};
+      });
+    }
+    return {hash: sha256HexPure(new Uint8Array(buf)), note:''};
+  }).catch(function(){
+    return {hash:'', note:t('hash.readFail')};
+  });
+}
+
+/* ===================== 檔名自動歸類 ===================== */
+function suggestFor(fileName, onlyPkgId){
+  var norm = normalizeName(fileName);
+  if(!norm) return null;
+  var best = null;
+  state.packages.forEach(function(p){
+    if(onlyPkgId && p.id !== onlyPkgId) return;
+    p.items.forEach(function(it){
+      var score = 0, hits = [];
+      it.keywords.concat(it.keywordsEn || []).concat([it.name, it.nameEn || '']).forEach(function(kw){
+        var k = normalizeName(kw);
+        if(!k || k.length < 2) return;
+        if(norm.indexOf(k) >= 0){ score += k.length; hits.push(kw); }
+      });
+      if(score > 0 && (!best || score > best.score)){
+        best = {pkgId:p.id, itemId:it.id, score:score, hits:hits};
+      }
+    });
+  });
+  return best;
+}
+function isAcceptableName(name){
+  if(!name) return false;
+  if(name.charAt(0) === '.') return false;
+  if(/^(thumbs\.db|desktop\.ini|icon\r|\.DS_Store)$/i.test(name)) return false;
+  if(/\.(tmp|temp|part|partial|crdownload|download|bak|swp)$/i.test(name)) return false;
+  return true;
+}
+
+/* ===================== 檔案加入流程 ===================== */
+function walkEntry(entry, prefix, out, depth){
+  depth = depth || 0;
+  return new Promise(function(resolve){
+    if(depth > 12){ resolve(); return; }
+    if(entry.isFile){
+      entry.file(function(f){
+        out.push({file:f, relPath:(prefix ? prefix + '/' : '') + f.name});
+        resolve();
+      }, function(){ resolve(); });
+      return;
+    }
+    var reader = entry.createReader();
+    var collected = [];
+    var readBatch = function(){
+      reader.readEntries(function(ents){
+        if(!ents.length){
+          var chain = Promise.resolve();
+          collected.forEach(function(e){
+            chain = chain.then(function(){
+              return walkEntry(e, (prefix ? prefix + '/' : '') + entry.name, out, depth + 1);
+            });
+          });
+          chain.then(function(){ resolve(); });
+          return;
+        }
+        for(var i=0;i<ents.length;i++) collected.push(ents[i]);
+        readBatch();
+      }, function(){ resolve(); });
+    };
+    readBatch();
+  });
+}
+function collectFromDataTransfer(dt){
+  var out = [];
+  var items = dt.items ? Array.prototype.slice.call(dt.items) : [];
+  var entries = [];
+  items.forEach(function(it){
+    if(it.kind === 'file' && it.webkitGetAsEntry){
+      var e = it.webkitGetAsEntry();
+      if(e) entries.push(e);
+    }
+  });
+  if(entries.length){
+    var chain = Promise.resolve();
+    entries.forEach(function(en){ chain = chain.then(function(){ return walkEntry(en, '', out, 0); }); });
+    return chain.then(function(){ return out; });
+  }
+  Array.prototype.slice.call(dt.files || []).forEach(function(f){ out.push({file:f, relPath:f.name}); });
+  return Promise.resolve(out);
+}
+function addFiles(list){
+  if(hashBusy){ toast(t('toast.hashBusy')); return; }
+  var targetSel = document.getElementById('assign-target');
+  var targetPkg = targetSel ? targetSel.value : '';
+  var added = [], sources = [];
+  list.forEach(function(item){
+    var file = item.file;
+    if(!file || !isAcceptableName(file.name)) return;
+    var rp = item.relPath || file.name;
+    var dup = null;
+    for(var i=0;i<state.files.length;i++){
+      if(state.files[i].relPath === rp && state.files[i].size === file.size){ dup = state.files[i]; break; }
+    }
+    if(dup){ added.push(dup.id); sources.push({rec:dup, file:file}); return; }
+    var sug = suggestFor(file.name, targetPkg || '');
+    var rec = {
+      id: newId('f'), name: file.name, size: file.size, relPath: rp,
+      hash: '', hashState: 'pending', hashNote: '',
+      pkgId: sug ? sug.pkgId : (targetPkg || ''),
+      itemId: sug ? sug.itemId : ''
+    };
+    state.files.push(rec);
+    added.push(rec.id);
+    sources.push({rec:rec, file:file});
+  });
+  if(!added.length){ toast(t('toast.noFile')); return; }
+  save(); renderAll();
+  hashBusy = true;
+  setSaveHint(t('toast.hashDoing', {i:0, n:sources.length}));
+  var idx = 0;
+  var chain = Promise.resolve();
+  sources.forEach(function(pair){
+    chain = chain.then(function(){
+      var rec = pair.rec;
+      if(rec.hash){ idx++; return null; }
+      idx++;
+      return hashFile(pair.file).then(function(res){
+        rec.hash = res.hash || '';
+        rec.hashNote = res.note || '';
+        rec.hashState = res.hash ? 'done' : 'skipped';
+        if(idx % 4 === 0 || idx === sources.length){
+          setSaveHint(t('toast.hashDoing', {i:idx, n:sources.length}));
+          renderFiles(); renderCheck(); renderPreview();
+        }
+        return new Promise(function(r){ setTimeout(r, 0); });
+      });
+    });
+  });
+  chain.then(function(){
+    hashBusy = false;
+    saveNow();
+    renderAll();
+    toast('已加入 ' + added.length + ' 個檔案');
+  }).catch(function(){
+    hashBusy = false;
+    saveNow(); renderAll();
+    toast('部分檔案雜湊計算失敗，其餘仍可使用');
+  });
+}
+
+/* ===================== 繪製：申請包 ===================== */
+function renderPackages(){
+  var box = document.getElementById('pkg-list');
+  if(!state.packages.length){
+    box.innerHTML = '<p class="muted">' + esc(t('pkg.empty')) + '</p>';
+    return;
+  }
+  var html = '';
+  state.packages.forEach(function(p, pi){
+    var c = completion(p);
+    var barCls = c.pct === 100 ? '' : (c.pct === 0 ? 'zero' : 'partial');
+    html += '<div class="pkg" data-pkg="' + p.id + '">';
+    html += '<div class="pkg-head"><div class="pkg-title">' + esc(t('pkg.head', {n: pi+1})) + esc(pkgLabel(p)) + '</div>';
+    html += '<div>' + (c.total ? '<span class="badge ' + (c.pct === 100 ? 'ok' : 'warn') + '">' + esc(t('pkg.badge.done', {done:c.done, total:c.total, pct:c.pct})) + '</span>' : '<span class="badge">' + esc(t('pkg.badge.none')) + '</span>') + '</div></div>';
+    html += '<div class="bar ' + barCls + '"><i style="width:' + c.pct + '%"></i></div>';
+    html += '<div class="grid2">';
+    html += '<label class="fld"><span>' + esc(t('pkg.school')) + '</span><input type="text" data-act="pkg-school" value="' + esc(p.school) + '" placeholder="' + esc(t('pkg.ph.school')) + '"></label>';
+    html += '<label class="fld"><span>' + esc(t('pkg.program')) + '</span><input type="text" data-act="pkg-program" value="' + esc(p.program) + '" placeholder="' + esc(t('pkg.ph.program')) + '"></label>';
+    html += '<label class="fld full"><span>' + esc(t('pkg.note')) + '</span><input type="text" data-act="pkg-note" value="' + esc(p.note) + '" placeholder="' + esc(t('pkg.ph.note')) + '"></label>';
+    html += '</div>';
+    html += '<div class="items">';
+    if(!p.items.length){
+      html += '<p class="muted small">' + esc(t('pkg.itemsEmpty')) + '</p>';
+    }else{
+      p.items.forEach(function(it, ii){
+        html += '<div class="itemrow" data-pkg="' + p.id + '" data-item="' + it.id + '">';
+        html += '<div class="flags">';
+        html += '<label class="req" title="' + esc(t('item.req')) + '"><input type="checkbox" data-act="item-req"' + (it.required ? ' checked' : '') + '>' + esc(t('item.req')) + '</label>';
+        html += '<label class="req" title="' + esc(t('item.handTitle')) + '"><input type="checkbox" data-act="item-hand"' + (it.hand ? ' checked' : '') + '>' + esc(t('item.hand')) + '</label>';
+        html += '</div>';
+        html += '<input type="text" data-act="item-name" value="' + esc(it.name) + '" placeholder="' + esc(t('item.ph.name')) + '">';
+        html += '<input type="text" data-act="item-kw" value="' + esc(it.keywords.join(', ')) + '" placeholder="' + esc(t('item.ph.kw')) + '">';
+        html += '<div class="acts">';
+        html += '<button class="btn tiny" data-act="item-sheet" title="' + esc(t('item.sheetTitle')) + '">' + esc(t('item.sheet')) + '</button>';
+        html += '<button class="btn tiny" data-act="item-up" title="' + esc(t('item.up')) + '"' + (ii === 0 ? ' disabled' : '') + '>↑</button>';
+        html += '<button class="btn tiny" data-act="item-down" title="' + esc(t('item.down')) + '"' + (ii === p.items.length-1 ? ' disabled' : '') + '>↓</button>';
+        html += '<button class="btn tiny danger" data-act="item-del" title="' + esc(t('item.delTitle')) + '">' + esc(t('item.del')) + '</button>';
+        html += '</div></div>';
+      });
+    }
+    html += '</div>';
+    html += '<div class="toolbar" style="margin:10px 0 0">';
+    html += '<button class="btn tiny" data-act="pkg-add-item">' + esc(t('pkg.addItem')) + '</button>';
+    html += '<button class="btn tiny" data-act="pkg-add-defaults">' + esc(t('pkg.addDefaults')) + '</button>';
+    html += '<button class="btn tiny danger" data-act="pkg-del">' + esc(t('pkg.del')) + '</button>';
+    html += '</div></div>';
+  });
+  box.innerHTML = html;
+}
+
+/* ===================== 繪製：檔案 ===================== */
+function renderFiles(){
+  var d = dupInfo();
+  var stats = document.getElementById('file-stats');
+  var assigned = state.files.filter(function(f){ return f.pkgId && f.itemId; }).length;
+  var noHash = state.files.filter(function(f){ return !f.hash; }).length;
+  stats.innerHTML =
+    '<span class="k">' + esc(t('files.stat.total', {n: state.files.length})) + '</span>' +
+    '<span class="k">' + esc(t('files.stat.assigned', {n: assigned})) + '</span>' +
+    '<span class="k">' + esc(t('files.stat.unassigned', {n: state.files.length - assigned})) + '</span>' +
+    '<span class="k">' + esc(t('files.stat.dup', {n: d.groups.length})) + '</span>' +
+    (noHash ? '<span class="k">' + esc(t('files.stat.nohash', {n: noHash})) + '</span>' : '');
+
+  var box = document.getElementById('file-list');
+  if(!state.files.length){
+    box.innerHTML = '<p class="muted small">' + esc(t('files.empty')) + '</p>';
+    return;
+  }
+  var html = '';
+  state.files.forEach(function(f){
+    var pkg = findPkg(f.pkgId);
+    var itemOk = false;
+    if(pkg){ itemOk = pkg.items.some(function(it){ return it.id === f.itemId; }); }
+    html += '<div class="frow" data-fid="' + f.id + '">';
+    html += '<div class="fmain"><div class="fname">' + esc(f.name);
+    if(d.flagged[f.id]) html += '<span class="pill dup">' + esc(t('files.pill.dup')) + '</span>';
+    if(!f.hash) html += '<span class="pill nohash">' + esc(f.hashNote || t('files.pill.nohash')) + '</span>';
+    html += '</div><div class="fmeta">' + fmtSize(f.size) + ' ｜ ' + esc(f.relPath) +
+            (f.hash ? ' ｜ SHA-256 ' + esc(f.hash.slice(0,12)) + '…' : '') + '</div></div>';
+    html += '<div class="fassign">';
+    html += '<select data-act="file-pkg" data-fid="' + f.id + '"><option value="">' + esc(t('files.sel.none')) + '</option>';
+    state.packages.forEach(function(p){
+      html += '<option value="' + p.id + '"' + (p.id === f.pkgId ? ' selected' : '') + '>' + esc(pkgLabel(p)) + '</option>';
+    });
+    html += '</select>';
+    html += '<select data-act="file-item" data-fid="' + f.id + '"><option value="">' + esc(t('files.sel.item')) + '</option>';
+    if(pkg){
+      pkg.items.forEach(function(it){
+        var sel = itemOk && it.id === f.itemId ? ' selected' : '';
+        html += '<option value="' + it.id + '"' + sel + '>' + esc(it.name) + (it.required ? t('files.reqSuffix') : t('files.optSuffix')) + '</option>';
+      });
+    }
+    html += '</select>';
+    html += '<button class="btn tiny danger" data-act="file-del" data-fid="' + f.id + '">' + esc(t('files.remove')) + '</button>';
+    html += '</div></div>';
+  });
+  box.innerHTML = html;
+}
+
+/* ===================== 繪製：缺件檢查 ===================== */
+function renderCheck(){
+  var d = dupInfo();
+  var sum = document.getElementById('check-summary');
+  var totalMissing = 0, totalReq = 0, totalDone = 0;
+  state.packages.forEach(function(p){
+    var c = completion(p);
+    totalMissing += missingItems(p).length;
+    totalReq += c.total; totalDone += c.done;
+  });
+  var overall = totalReq ? Math.round(totalDone / totalReq * 100) : 0;
+  sum.innerHTML =
+    '<span class="k">' + esc(t('chk.stat.pkg', {n: state.packages.length})) + '</span>' +
+    '<span class="k">' + esc(t('chk.stat.req', {done: totalDone, total: totalReq, pct: overall})) + '</span>' +
+    '<span class="k"' + (totalMissing ? ' style="background:var(--badbg);color:var(--bad)"' : '') + '>' + esc(t('chk.stat.missing', {n: totalMissing})) + '</span>' +
+    '<span class="k"' + (d.groups.length ? ' style="background:var(--warnbg);color:var(--warn)"' : '') + '>' + esc(t('chk.stat.dup', {n: d.groups.length})) + '</span>';
+
+  var box = document.getElementById('check-list');
+  if(!state.packages.length){
+    box.innerHTML = '<p class="muted small">' + esc(t('chk.empty')) + '</p>';
+    return;
+  }
+  var html = '';
+  state.packages.forEach(function(p, pi){
+    var c = completion(p);
+    var barCls = c.pct === 100 ? '' : (c.pct === 0 ? 'zero' : 'partial');
+    html += '<div class="chk"><h3>' + (pi+1) + '. ' + esc(pkgLabel(p)) + '　<span class="badge ' + (c.pct === 100 ? 'ok' : 'warn') + '">' + esc(t('pkg.badge.done', {done:c.done, total:c.total, pct:c.pct})) + '</span></h3>';
+    html += '<div class="bar ' + barCls + '"><i style="width:' + c.pct + '%"></i></div>';
+    html += '<div class="tw"><table class="tbl"><thead><tr><th>' + esc(t('chk.th.light')) + '</th><th>' + esc(t('chk.th.item')) + '</th><th>' + esc(t('chk.th.cat')) + '</th><th>' + esc(t('chk.th.files')) + '</th></tr></thead><tbody>';
+    p.items.forEach(function(it){
+      var fs = filesOf(p.id, it.id);
+      var light, stateTxt;
+      if(fs.length){ light = '<span class="dot ok"></span>'; stateTxt = esc(t('chk.ok', {n: fs.length})); }
+      else if(it.required){ light = '<span class="dot bad"></span>'; stateTxt = '<b style="color:var(--bad)">' + esc(t('chk.missing')) + '</b>'; }
+      else { light = '<span class="dot opt"></span>'; stateTxt = esc(t('chk.optMissing')); }
+      var names = fs.map(function(f){
+        return '<div>' + esc(f.name) + (d.flagged[f.id] ? ' <span class="pill dup">' + esc(t('files.pill.dup')) + '</span>' : '') + '</div>';
+      }).join('');
+      html += '<tr><td>' + light + '</td><td>' + esc(it.name) + (it.hand ? ' <span class="pill hand">' + esc(t('item.hand')) + '</span>' : '') + '</td><td>' + (it.required ? esc(t('chk.req')) : esc(t('chk.opt'))) +
+              '</td><td>' + (names || stateTxt) + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+    var miss = missingItems(p);
+    if(miss.length){
+      html += '<p class="small" style="color:var(--bad)">' + esc(t('chk.todo')) + esc(miss.map(function(m){ return m.name; }).join(t('listSep'))) + '</p>';
+    }
+    html += '</div>';
+  });
+  box.innerHTML = html;
+}
+
+/* ===================== 繪製：全部 ===================== */
+function renderAssignmentTarget(){
+  var sel = document.getElementById('assign-target');
+  var cur = sel.value;
+  var html = '<option value="">' + esc(t('assign.auto')) + '</option>';
+  state.packages.forEach(function(p){
+    html += '<option value="' + p.id + '">' + esc(t('assign.prefer')) + esc(pkgLabel(p)) + '</option>';
+  });
+  sel.innerHTML = html;
+  sel.value = cur;
+  if(sel.value !== cur) sel.value = '';
+}
+function renderAll(){
+  renderPackages();
+  renderAssignmentTarget();
+  renderFiles();
+  renderCheck();
+  renderPreview();
+}
+
+/* ===================== 匯出內容 ===================== */
+function buildMarkdown(){
+  var lines = [];
+  var d = dupInfo();
+  var totalReq = 0, totalDone = 0, totalMissing = 0;
+  state.packages.forEach(function(p){
+    var c = completion(p);
+    totalReq += c.total; totalDone += c.done; totalMissing += missingItems(p).length;
+  });
+  lines.push('# ' + tx('x.title'));
+  lines.push('');
+  lines.push('- ' + tx('x.generatedAt') + nowStr());
+  lines.push('- ' + tx('x.pkgCount') + state.packages.length);
+  lines.push('- ' + tx('x.fileCount') + state.files.length);
+  lines.push('- ' + tx('x.overall') + totalDone + '/' + totalReq + '（' + (totalReq ? Math.round(totalDone/totalReq*100) : 0) + '%）');
+  lines.push('- ' + tx('x.missingCount') + totalMissing);
+  lines.push('- ' + tx('x.dupGroups') + d.groups.length);
+  lines.push('');
+  lines.push('## ' + tx('x.sec1'));
+  if(!state.packages.length){
+    lines.push('');
+    lines.push(tx('x.noPkg'));
+  }
+  state.packages.forEach(function(p, pi){
+    var c = completion(p);
+    lines.push('');
+    lines.push('### ' + (pi+1) + '. ' + pkgLabel(p));
+    lines.push('');
+    lines.push('- ' + tx('x.pkgDone') + c.done + '/' + c.total + '（' + c.pct + '%）');
+    if(p.note) lines.push('- ' + tx('x.noteLabel') + p.note);
+    lines.push('');
+    lines.push('| ' + tx('x.th.no') + ' | ' + tx('x.th.item') + ' | ' + tx('x.th.cat') + ' | ' + tx('x.th.hand') + ' | ' + tx('x.th.state') + ' | ' + tx('x.th.files') + ' |');
+    lines.push('|---|---|---|---|---|---|');
+    p.items.forEach(function(it, ii){
+      var fs = filesOf(p.id, it.id);
+      var st = fs.length ? tx('x.state.ok') : (it.required ? tx('x.state.missing') : tx('x.state.opt'));
+      var names = fs.length ? fs.map(function(f){ return f.name; }).join('<br>') : '—';
+      lines.push('| ' + (ii+1) + ' | ' + it.name + ' | ' + (it.required ? tx('x.req') : tx('x.opt')) + ' | ' + (it.hand ? tx('x.handYes') : tx('x.handNo')) + ' | ' + st + ' | ' + names + ' |');
+    });
+  });
+  lines.push('');
+  lines.push('## ' + tx('x.sec2'));
+  lines.push('');
+  if(!totalMissing){
+    lines.push(tx('x.allReady'));
+  }else{
+    state.packages.forEach(function(p){
+      var miss = missingItems(p);
+      if(miss.length) lines.push('- ' + pkgLabel(p) + '：' + miss.map(function(m){ return m.name; }).join(tx('listSep')));
+    });
+  }
+  lines.push('');
+  lines.push('## ' + tx('x.sec3'));
+  lines.push('');
+  if(!d.groups.length){
+    lines.push(tx('x.noDup'));
+  }else{
+    d.groups.forEach(function(g){
+      lines.push('- `' + g.hash.slice(0,12) + '…`：');
+      g.files.forEach(function(f){
+        var pkg = findPkg(f.pkgId);
+        var itemName = tx('x.unassigned');
+        if(pkg){
+          pkg.items.forEach(function(it){ if(it.id === f.itemId) itemName = it.name; });
+          itemName = pkgLabel(pkg) + ' / ' + itemName;
+        }
+        lines.push('  - ' + f.name + '（' + itemName + '，' + fmtSize(f.size) + '）');
+      });
+    });
+    lines.push('');
+    lines.push('> ' + tx('x.dupTip'));
+  }
+  lines.push('');
+  lines.push('## ' + tx('x.sec4'));
+  lines.push('');
+  lines.push('```');
+  lines.push(buildStructure());
+  lines.push('```');
+  lines.push('');
+  lines.push('## ' + tx('x.sec5'));
+  lines.push('');
+  if(!state.files.length){
+    lines.push(tx('x.noFiles'));
+  }else{
+    lines.push('| ' + tx('x.th.name') + ' | ' + tx('x.th.size') + ' | ' + tx('x.th.path') + ' | ' + tx('x.th.sha') + ' | ' + tx('x.th.where') + ' |');
+    lines.push('|---|---|---|---|---|');
+    state.files.forEach(function(f){
+      var pkg = findPkg(f.pkgId), where = tx('x.where.none');
+      if(pkg){
+        var itemName = '';
+        pkg.items.forEach(function(it){ if(it.id === f.itemId) itemName = it.name; });
+        where = pkgLabel(pkg) + ' / ' + (itemName || tx('x.where.itemNone'));
+      }
+      lines.push('| ' + f.name + ' | ' + fmtSize(f.size) + ' | ' + f.relPath + ' | ' + (f.hash ? f.hash.slice(0,12) : tx('x.hashNone')) + ' | ' + where + ' |');
+    });
+  }
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+  lines.push(tx('x.footer'));
+  return lines.join('\n');
+}
+function buildStructure(){
+  var out = [];
+  out.push(tx('x.tree.root'));
+  if(!state.packages.length){
+    out.push('└─ ' + tx('x.tree.noPkg'));
+    return out.join('\n');
+  }
+  state.packages.forEach(function(p, pi){
+    var pLast = pi === state.packages.length - 1;
+    out.push((pLast ? '└─ ' : '├─ ') + pkgLabel(p) + '/');
+    var ind = pLast ? '   ' : '│  ';
+    if(!p.items.length){
+      out.push(ind + '└─ ' + tx('x.tree.noItems'));
+      return;
+    }
+    p.items.forEach(function(it, ii){
+      var itLast = ii === p.items.length - 1;
+      var fs = filesOf(p.id, it.id);
+      out.push(ind + (itLast ? '└─ ' : '├─ ') + it.name + '（' + (it.required ? tx('x.req') : tx('x.opt')) + '）' + (it.hand ? '【' + tx('x.handYes') + '】' : '') + (fs.length ? '' : tx('x.tree.todo')));
+      var ind2 = ind + (itLast ? '   ' : '│  ');
+      if(!fs.length){
+        out.push(ind2 + '└─ ' + tx('x.tree.placeHere'));
+      }else{
+        fs.forEach(function(f, fi){
+          out.push(ind2 + (fi === fs.length - 1 ? '└─ ' : '├─ ') + f.name);
+        });
+      }
+    });
+  });
+  return out.join('\n');
+}
+function csvCell(v){
+  var s = String(v == null ? '' : v);
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function buildCSV(){
+  var rows = [[tx('x.csv.pkg'), tx('x.csv.school'), tx('x.csv.program'), tx('x.csv.item'), tx('x.csv.cat'), tx('x.csv.hand'), tx('x.csv.state'), tx('x.csv.file'), tx('x.csv.size'), tx('x.csv.path'), tx('x.csv.sha')]];
+  state.packages.forEach(function(p){
+    p.items.forEach(function(it){
+      var fs = filesOf(p.id, it.id);
+      var hand = it.hand ? tx('x.handYes') : tx('x.handNo');
+      if(!fs.length){
+        rows.push([pkgLabel(p), p.school || '', p.program || '', it.name, it.required ? tx('x.req') : tx('x.opt'), hand, it.required ? tx('x.state.missing') : tx('x.state.opt'), '', '', '', '']);
+      }else{
+        fs.forEach(function(f){
+          rows.push([pkgLabel(p), p.school || '', p.program || '', it.name, it.required ? tx('x.req') : tx('x.opt'), hand, tx('x.state.ok'),
+                     f.name, fmtSize(f.size), f.relPath, f.hash ? f.hash.slice(0,12) : '']);
+        });
+      }
+    });
+  });
+  return '\ufeff' + rows.map(function(r){
+    return r.map(csvCell).join(',');
+  }).join('\r\n') + '\r\n';
+}
+function renderPreview(){
+  var el = document.getElementById('preview');
+  if(!el) return;
+  el.textContent = buildMarkdown();
+}
+function downloadText(filename, text, mime){
+  var blob = new Blob([text], {type: mime || 'text/plain;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1500);
+}
+function copyText(text, okMsg){
+  var done = function(){ toast(okMsg || t('toast.copyOk')); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done, function(){ fallbackCopy(text, done); });
+  }else{
+    fallbackCopy(text, done);
+  }
+}
+function fallbackCopy(text, done){
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed'; ta.style.top = '-1000px';
+  document.body.appendChild(ta);
+  ta.select();
+  var ok = false;
+  try{ ok = document.execCommand('copy'); }catch(e){ ok = false; }
+  ta.remove();
+  if(ok) done();
+  else toast(t('toast.copyFail'));
+}
+
+/* ===================== 手寫稿紙模組 ===================== */
+var SHEET_FONTS = [
+  {id:'kai',   css:'"BiauKai","標楷體","DFKai-SB","Kaiti SC","KaiTi","STKaiti","楷体","KaiTi_GB2312",serif'},
+  {id:'hand',  css:'"HanziPen SC","HanziPen TC","Yuppy SC","Segoe Script","Bradley Hand","Comic Sans MS","STKaiti","標楷體",cursive'},
+  {id:'round', css:'"Yuanti SC","Yuanti TC","圆体-简","Microsoft JhengHei","Microsoft YaHei","PingFang SC",sans-serif'},
+  {id:'sans',  css:'"PingFang TC","PingFang SC","Microsoft JhengHei","Microsoft YaHei",Helvetica,Arial,sans-serif'}
+];
+var SHEET_PAGE = {w:210, h:297, margin:15};
+var SHEET_DEFAULT_UI = {type:'grid', cols:22, spacing:1.15, limit:1000, fontPreview:false, font:'kai', ratio:74};
+var SHEET = {open:false, ref:{pkgId:'', itemId:''}};
+
+function sheetUI(){
+  if(!state.sheetUI || typeof state.sheetUI !== 'object') state.sheetUI = {};
+  var u = state.sheetUI, d = SHEET_DEFAULT_UI;
+  if(u.type !== 'grid' && u.type !== 'lines' && u.type !== 'blank') u.type = d.type;
+  u.cols = (typeof u.cols === 'number' && u.cols >= 10 && u.cols <= 40) ? u.cols : d.cols;
+  u.spacing = (typeof u.spacing === 'number' && u.spacing >= 0.8 && u.spacing <= 3) ? u.spacing : d.spacing;
+  u.limit = (typeof u.limit === 'number' && u.limit >= 0) ? u.limit : d.limit;
+  u.fontPreview = !!u.fontPreview;
+  u.ratio = (typeof u.ratio === 'number' && u.ratio >= 50 && u.ratio <= 100) ? u.ratio : d.ratio;
+  var okFont = false;
+  SHEET_FONTS.forEach(function(f){ if(f.id === u.font) okFont = true; });
+  if(!okFont) u.font = d.font;
+  return u;
+}
+function sheetKey(){ return SHEET.ref.pkgId + '|' + SHEET.ref.itemId; }
+function sheetTextOf(){ 
+  if(!state.sheetText || typeof state.sheetText !== 'object') state.sheetText = {};
+  var k = sheetKey();
+  return typeof state.sheetText[k] === 'string' ? state.sheetText[k] : '';
+}
+function sheetSetText(v){
+  if(!state.sheetText || typeof state.sheetText !== 'object') state.sheetText = {};
+  state.sheetText[sheetKey()] = String(v == null ? '' : v);
+}
+function sheetFontCss(id){
+  var css = SHEET_FONTS[0].css;
+  SHEET_FONTS.forEach(function(f){ if(f.id === id) css = f.css; });
+  return css;
+}
+function sheetWrapLines(text, cols){
+  var out = [];
+  String(text == null ? '' : text).split(/\r?\n/).forEach(function(para){
+    if(para === ''){ out.push(''); return; }
+    var arr = Array.from(para);
+    for(var i = 0; i < arr.length; i += cols) out.push(arr.slice(i, i + cols).join(''));
+  });
+  return out;
+}
+function sheetCountChars(text){
+  return Array.from(String(text == null ? '' : text).replace(/\s/g, '')).length;
+}
+function sheetMetrics(){
+  var u = sheetUI();
+  var innerW = SHEET_PAGE.w - SHEET_PAGE.margin * 2;   // 180mm
+  var innerH = SHEET_PAGE.h - SHEET_PAGE.margin * 2;   // 267mm
+  var cellW = innerW / u.cols;
+  var rowH = cellW * u.spacing;
+  var perPage = Math.max(1, Math.floor(innerH / rowH));
+  var text = document.getElementById('sheet-text');
+  var raw = text ? text.value : sheetTextOf();
+  var lines = sheetWrapLines(raw, u.cols);
+  var chars = sheetCountChars(raw);
+  var pages = Math.max(1, Math.ceil(lines.length / perPage));
+  return {u:u, innerW:innerW, innerH:innerH, cellW:cellW, rowH:rowH, perPage:perPage, lines:lines, chars:chars, pages:pages, raw:raw};
+}
+function renderSheetFonts(){
+  var sel = document.getElementById('sheet-font');
+  if(!sel) return;
+  var u = sheetUI();
+  sel.innerHTML = SHEET_FONTS.map(function(f){
+    return '<option value="' + f.id + '"' + (f.id === u.font ? ' selected' : '') + '>' + esc(t('sheet.font.' + f.id)) + '</option>';
+  }).join('');
+}
+function syncSheetUI(){
+  var u = sheetUI();
+  var set = function(id, val){ var el = document.getElementById(id); if(el) el.value = String(val); };
+  set('sheet-type', u.type);
+  set('sheet-cols', u.cols);
+  set('sheet-spacing', u.spacing);
+  set('sheet-limit', u.limit);
+  set('sheet-ratio', u.ratio);
+  var cb = document.getElementById('sheet-font-preview');
+  if(cb) cb.checked = u.fontPreview;
+  renderSheetFonts();
+}
+function openSheet(pkgId, itemId){
+  var pkg = findPkg(pkgId);
+  var item = null;
+  if(pkg) pkg.items.forEach(function(it){ if(it.id === itemId) item = it; });
+  SHEET.ref = {pkgId: pkgId || '', itemId: itemId || ''};
+  var modal = document.getElementById('sheet-modal');
+  var ta = document.getElementById('sheet-text');
+  var title = document.getElementById('sheet-title');
+  if(ta) ta.value = sheetTextOf();
+  if(title) title.textContent = (pkg && item) ? t('sheet.forItem', {pkg: pkgLabel(pkg), item: item.name}) : t('sheet.title.free');
+  if(modal) modal.classList.remove('hidden');
+  SHEET.open = true;
+  syncSheetUI();
+  renderSheet();
+}
+function closeSheet(){
+  var modal = document.getElementById('sheet-modal');
+  if(modal) modal.classList.add('hidden');
+  SHEET.open = false;
+  renderPreview();
+}
+function renderSheet(){
+  var pagesEl = document.getElementById('sheet-pages');
+  var statEl = document.getElementById('sheet-stat');
+  var warnEl = document.getElementById('sheet-warn');
+  if(!pagesEl) return;
+  var m = sheetMetrics();
+  var u = m.u;
+  var fontCss = u.fontPreview ? sheetFontCss(u.font) : '"PingFang TC","PingFang SC","Microsoft JhengHei","Microsoft YaHei",Helvetica,Arial,sans-serif';
+  var ratio = u.fontPreview ? u.ratio : Math.min(u.ratio, 68);
+
+  if(statEl){
+    statEl.innerHTML =
+      '<span class="k">' + esc(t('sheet.stat.chars', {n: m.chars})) + '</span>' +
+      '<span class="k">' + esc(t('sheet.stat.lines', {n: m.lines.length})) + '</span>' +
+      '<span class="k">' + esc(t('sheet.stat.pages', {n: m.pages})) + '</span>' +
+      '<span class="k">' + esc(u.limit > 0 ? t('sheet.stat.limit', {n: u.limit}) : t('sheet.stat.noLimit')) + '</span>';
+  }
+  if(warnEl){
+    if(u.limit > 0 && m.chars > u.limit){
+      warnEl.className = 'sheet-warn';
+      warnEl.textContent = t('sheet.warn.over', {n: m.chars, limit: u.limit, over: m.chars - u.limit});
+    }else if(u.limit > 0){
+      warnEl.className = 'sheet-ok';
+      warnEl.textContent = t('sheet.ok.under', {n: m.chars, limit: u.limit, left: Math.max(0, u.limit - m.chars)});
+    }else{
+      warnEl.className = 'sheet-ok';
+      warnEl.textContent = t('sheet.ok.free', {n: m.chars});
+    }
+  }
+  if(!m.lines.length){
+    pagesEl.innerHTML = '<div class="sheet-empty">' + esc(t('sheet.empty')) + '</div>';
+    return;
+  }
+  var fs = (m.cellW * ratio / 100).toFixed(2);
+  var html = '';
+  for(var p = 0; p < m.pages; p++){
+    html += '<div class="sheet-page ' + u.type + '" style="font-family:' + fontCss + '"><div class="sheet-inner">';
+    for(var r = 0; r < m.perPage; r++){
+      var li = p * m.perPage + r;
+      var line = (li < m.lines.length) ? Array.from(m.lines[li]) : [];
+      html += '<div class="sheet-line" style="height:' + m.rowH.toFixed(3) + 'mm">';
+      for(var c = 0; c < u.cols; c++){
+        var ch = line[c] !== undefined ? line[c] : '';
+        html += '<div class="sheet-cell" style="width:' + m.cellW.toFixed(3) + 'mm;font-size:' + fs + 'mm">' + esc(ch) + '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div></div>';
+  }
+  pagesEl.innerHTML = html;
+}
+function printSheet(){
+  if(!SHEET.open) return;
+  document.body.classList.add('print-sheet');
+  try{ window.print(); }catch(e){}
+  setTimeout(function(){ document.body.classList.remove('print-sheet'); }, 800);
+}
+
+/* ===================== 申請包操作 ===================== */
+function addPackage(useTemplate){
+  var p = {id:newId('p'), school:'', program:'', note:'', items:[]};
+  if(useTemplate !== 'blank'){
+    DEFAULTS.forEach(function(d){
+      p.items.push({id:newId('i'), name:defName(d), nameEn:d.nameEn || '', required:d.required,
+                    keywords:(LANG === 'en' ? (d.keywordsEn || d.keywords) : d.keywords).slice(), hand:false});
+    });
+  }
+  state.packages.push(p);
+  save(); renderAll();
+  toast(t('toast.pkgAdded', {n: state.packages.length}));
+}
+function demoPackages(){
+  var zh = (LANG === 'zh');
+  var a = {id:newId('p'), school: zh ? '○○大學' : 'Example University', program: zh ? '△△學系' : 'Dept. of Example Studies', note: zh ? '線上報名截止 10/16' : 'Online application due 10/16', items:[]};
+  var b = {id:newId('p'), school: zh ? '□□大學' : 'Sample University', program: zh ? '◇◇學士學位學程' : 'Bachelor Program in Sample Studies', note: zh ? '推薦函 2 封，其中 1 封須師長' : 'Two recommendation letters, one from a teacher', items:[]};
+  [a, b].forEach(function(p){
+    DEFAULTS.forEach(function(d){
+      if(p === a && d.name === '其他有利資料') return;
+      if(p === b && d.name === '操行證明／獎懲證明') return;
+      p.items.push({id:newId('i'), name:defName(d), nameEn:d.nameEn || '', required:d.required,
+                    keywords:(LANG === 'en' ? (d.keywordsEn || d.keywords) : d.keywords).slice(), hand:false});
+    });
+  });
+  state.packages.push(a, b);
+  save(); renderAll();
+  toast(t('toast.demoAdded'));
+}
+
+/* ===================== 事件處理 ===================== */
+function pkgOfEl(el){
+  var host = el.closest ? el.closest('[data-pkg]') : null;
+  if(!host) return {pkg:null, item:null};
+  var pkg = findPkg(host.getAttribute('data-pkg'));
+  var itemHost = el.closest ? el.closest('[data-item]') : null;
+  var item = null;
+  if(pkg && itemHost){
+    var iid = itemHost.getAttribute('data-item');
+    pkg.items.forEach(function(it){ if(it.id === iid) item = it; });
+  }
+  return {pkg:pkg, item:item};
+}
+
+document.addEventListener('input', function(e){
+  var el = e.target;
+  var act = el.getAttribute ? el.getAttribute('data-act') : null;
+  if(!act) return;
+  var ref = pkgOfEl(el);
+  if(act === 'pkg-school' && ref.pkg){ ref.pkg.school = el.value; save(); renderAssignmentTarget(); renderCheck(); renderPreview(); return; }
+  if(act === 'pkg-program' && ref.pkg){ ref.pkg.program = el.value; save(); renderAssignmentTarget(); renderFiles(); renderCheck(); renderPreview(); return; }
+  if(act === 'pkg-note' && ref.pkg){ ref.pkg.note = el.value; save(); renderPreview(); return; }
+  if(act === 'item-name' && ref.item){ ref.item.name = el.value; save(); renderFiles(); renderCheck(); renderPreview(); return; }
+  if(act === 'item-kw' && ref.item){
+    ref.item.keywords = el.value.split(/[,，]/).map(function(s){ return s.trim(); }).filter(function(s){ return s; });
+    save(); return;
+  }
+  if(act === 'item-req' && ref.item){ ref.item.required = el.checked; save(); renderAll(); return; }
+});
+
+document.addEventListener('change', function(e){
+  var el = e.target;
+  var act = el.getAttribute ? el.getAttribute('data-act') : null;
+  if(!act) return;
+  if(act === 'item-req'){
+    var r2 = pkgOfEl(el);
+    if(r2.item){ r2.item.required = el.checked; save(); renderAll(); }
+    return;
+  }
+  if(act === 'item-hand'){
+    var r3 = pkgOfEl(el);
+    if(r3.item){ r3.item.hand = el.checked; save(); renderFiles(); renderCheck(); renderPreview(); }
+    return;
+  }
+  if(act === 'file-pkg'){
+    var f1 = findFile(el.getAttribute('data-fid'));
+    if(!f1) return;
+    f1.pkgId = el.value; f1.itemId = '';
+    if(f1.pkgId){
+      var sug = suggestFor(f1.name, f1.pkgId);
+      if(sug) f1.itemId = sug.itemId;
+    }
+    save(); renderFiles(); renderCheck(); renderPreview();
+    return;
+  }
+  if(act === 'file-item'){
+    var f2 = findFile(el.getAttribute('data-fid'));
+    if(!f2) return;
+    f2.itemId = el.value;
+    save(); renderFiles(); renderCheck(); renderPreview();
+    return;
+  }
+});
+function findFile(id){
+  for(var i=0;i<state.files.length;i++){ if(state.files[i].id === id) return state.files[i]; }
+  return null;
+}
+
+document.addEventListener('click', function(e){
+  if(!e.target || !e.target.closest) return;
+  var el = e.target.closest('[data-act]') || e.target;
+  var act = el.getAttribute ? el.getAttribute('data-act') : null;
+  var ref = pkgOfEl(el);
+
+  if(act === 'pkg-del' && ref.pkg){
+    if(!window.confirm(t('confirm.delPkg', {name: pkgLabel(ref.pkg)}))) return;
+    state.packages = state.packages.filter(function(p){ return p.id !== ref.pkg.id; });
+    state.files.forEach(function(f){ if(f.pkgId === ref.pkg.id){ f.pkgId = ''; f.itemId = ''; } });
+    save(); renderAll(); return;
+  }
+  if(act === 'pkg-add-item' && ref.pkg){
+    ref.pkg.items.push({id:newId('i'), name:t('item.newName'), required:true, keywords:[], hand:false});
+    save(); renderAll(); return;
+  }
+  if(act === 'pkg-add-defaults' && ref.pkg){
+    var names = ref.pkg.items.map(function(it){ return it.name; });
+    var n = 0;
+    DEFAULTS.forEach(function(d){
+      var nm = defName(d);
+      if(names.indexOf(nm) >= 0) return;
+      ref.pkg.items.push({id:newId('i'), name:nm, nameEn:d.nameEn || '', required:d.required, keywords:(LANG === 'en' ? (d.keywordsEn || d.keywords) : d.keywords).slice(), hand:false});
+      n++;
+    });
+    save(); renderAll();
+    toast(n ? t('toast.defaultsAdded', {n: n}) : t('toast.defaultsExist'));
+    return;
+  }
+  if(act === 'item-del' && ref.pkg && ref.item){
+    if(!window.confirm(t('confirm.delItem', {name: ref.item.name}))) return;
+    ref.pkg.items = ref.pkg.items.filter(function(it){ return it.id !== ref.item.id; });
+    state.files.forEach(function(f){ if(f.itemId === ref.item.id){ f.pkgId = ''; f.itemId = ''; } });
+    save(); renderAll(); return;
+  }
+  if((act === 'item-up' || act === 'item-down') && ref.pkg && ref.item){
+    var arr = ref.pkg.items, i = arr.indexOf(ref.item);
+    var j = act === 'item-up' ? i - 1 : i + 1;
+    if(j < 0 || j >= arr.length) return;
+    arr.splice(i, 1); arr.splice(j, 0, ref.item);
+    save(); renderAll(); return;
+  }
+  if(act === 'file-del'){
+    var fid = el.getAttribute('data-fid');
+    state.files = state.files.filter(function(f){ return f.id !== fid; });
+    save(); renderAll(); return;
+  }
+  if(act === 'btn-add-pkg' || el.id === 'btn-add-pkg'){ addPackage(document.getElementById('tpl-select').value); return; }
+  if(el.id === 'btn-demo'){ demoPackages(); return; }
+  if(el.id === 'btn-pick-files'){ document.getElementById('pick-files').click(); return; }
+  if(el.id === 'btn-pick-folder'){ document.getElementById('pick-folder').click(); return; }
+  if(el.id === 'btn-auto-assign'){
+    var n = 0;
+    state.files.forEach(function(f){
+      if(f.pkgId && f.itemId) return;
+      var sug = suggestFor(f.name, f.pkgId || '');
+      if(sug){
+        if(f.pkgId !== sug.pkgId) f.itemId = '';
+        f.pkgId = sug.pkgId; f.itemId = sug.itemId; n++;
+      }
+    });
+    save(); renderAll();
+    toast(n ? t('toast.autoAssigned', {n: n}) : t('toast.autoNone'));
+    return;
+  }
+  if(act === 'item-sheet' && ref.pkg && ref.item){ openSheet(ref.pkg.id, ref.item.id); return; }
+  if(el.id === 'btn-md'){ downloadText(fileName('md'), buildMarkdown(), 'text/markdown;charset=utf-8'); toast(t('toast.mdDone', {lang: t(LANG === 'en' ? 'lang.en' : 'lang.zh')})); return; }
+  if(el.id === 'btn-csv'){ downloadText(fileName('csv'), buildCSV(), 'text/csv;charset=utf-8'); toast(t('toast.csvDone', {lang: t(LANG === 'en' ? 'lang.en' : 'lang.zh')})); return; }
+  if(el.id === 'btn-copy-md'){ copyText(buildMarkdown(), t('toast.copyOk')); return; }
+  if(el.id === 'btn-copy-tree'){ copyText(buildStructure(), t('toast.copyOk')); return; }
+  if(el.id === 'btn-export-json'){
+    var payload = {app: '書審資料包產生器 / Portfolio Planner', version: 1, exportedAt: new Date().toISOString(), packages: state.packages, files: state.files, sheetText: state.sheetText, sheetUI: state.sheetUI};
+    downloadText(fileNameJson(), JSON.stringify(payload, null, 2), 'application/json;charset=utf-8');
+    toast(t('toast.exportJson'));
+    return;
+  }
+  if(el.id === 'btn-import-json'){ document.getElementById('import-json').click(); return; }
+  if(el.id === 'btn-lang-zh'){ setLang('zh'); return; }
+  if(el.id === 'btn-lang-en'){ setLang('en'); return; }
+  if(el.id === 'sheet-close'){ closeSheet(); return; }
+  if(el.id === 'sheet-clear'){
+    var ta0 = document.getElementById('sheet-text');
+    if(ta0 && !window.confirm(t('sheet.confirm.clear'))) return;
+    if(ta0) ta0.value = '';
+    sheetSetText(''); save(); renderSheet();
+    toast(t('sheet.toast.cleared'));
+    return;
+  }
+  if(el.id === 'sheet-print'){ printSheet(); return; }
+  if(el.id === 'sheet-modal'){ 
+    if(e.target === el) closeSheet();
+    return;
+  }
+  if(el.id === 'btn-reset'){
+    if(!window.confirm(t('confirm.reset'))) return;
+    state = freshState();
+    saveNow(); renderAll();
+    closeSheet();
+    toast(t('toast.resetDone'));
+    return;
+  }
+});
+function fileName(ext){
+  return (LANG === 'en' ? 'portfolio-checklist_' : '書審繳件清單_') + fileStamp() + '.' + ext;
+}
+function fileNameJson(){
+  return (LANG === 'en' ? 'portfolio-settings_' : '書審資料包設定_') + fileStamp() + '.json';
+}
+function fileStamp(){
+  var d = new Date(), p = function(n){ return (n<10?'0':'') + n; };
+  return d.getFullYear() + p(d.getMonth()+1) + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes());
+}
+
+/* ===================== 檔案輸入與拖放 ===================== */
+document.getElementById('pick-files').addEventListener('change', function(e){
+  var arr = Array.prototype.slice.call(e.target.files || []).map(function(f){ return {file:f, relPath:f.name}; });
+  addFiles(arr);
+  e.target.value = '';
+});
+document.getElementById('pick-folder').addEventListener('change', function(e){
+  var arr = Array.prototype.slice.call(e.target.files || []).map(function(f){
+    return {file:f, relPath:f.webkitRelativePath || f.name};
+  });
+  addFiles(arr);
+  e.target.value = '';
+});
+document.getElementById('import-json').addEventListener('change', function(e){
+  var f = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if(!f) return;
+  var fr = new FileReader();
+  fr.onload = function(){
+    try{
+      var o = JSON.parse(fr.result);
+      if(!o || !Array.isArray(o.packages) || !Array.isArray(o.files)) throw new Error('format');
+      if(!window.confirm(t('confirm.import', {p: state.packages.length, f: state.files.length}))) return;
+      state = freshState();
+      state.packages = o.packages;
+      state.files = o.files;
+      state.sheetText = (o.sheetText && typeof o.sheetText === 'object') ? o.sheetText : {};
+      state.sheetUI = (o.sheetUI && typeof o.sheetUI === 'object') ? o.sheetUI : {};
+      state.packages.forEach(function(p){
+        p.items = Array.isArray(p.items) ? p.items : [];
+        p.items.forEach(function(it){ it.keywords = Array.isArray(it.keywords) ? it.keywords : []; it.required = !!it.required; it.hand = !!it.hand; });
+      });
+      state.nextId = 1;
+      var maxN = 0;
+      state.packages.forEach(function(p){
+        var n = parseInt(String(p.id).replace(/\D/g, ''), 10); if(n > maxN) maxN = n;
+        p.items.forEach(function(it){ var m = parseInt(String(it.id).replace(/\D/g, ''), 10); if(m > maxN) maxN = m; });
+      });
+      state.files.forEach(function(f){ var n = parseInt(String(f.id).replace(/\D/g, ''), 10); if(n > maxN) maxN = n; });
+      state.nextId = maxN + 1;
+      saveNow(); syncSheetUI(); renderAll();
+      if(SHEET.open){ var taI = document.getElementById('sheet-text'); if(taI) taI.value = sheetTextOf(); renderSheet(); }
+      toast(t('toast.importOk'));
+    }catch(err){
+      toast(t('toast.importFail'));
+    }
+  };
+  fr.readAsText(f);
+});
+
+var drop = document.getElementById('drop');
+['dragenter','dragover'].forEach(function(ev){
+  drop.addEventListener(ev, function(e){
+    e.preventDefault(); e.stopPropagation();
+    drop.classList.add('over');
+  });
+});
+['dragleave','dragend'].forEach(function(ev){
+  drop.addEventListener(ev, function(e){
+    e.preventDefault(); e.stopPropagation();
+    drop.classList.remove('over');
+  });
+});
+drop.addEventListener('drop', function(e){
+  e.preventDefault(); e.stopPropagation();
+  drop.classList.remove('over');
+  var dt = e.dataTransfer;
+  if(!dt) return;
+  collectFromDataTransfer(dt).then(function(list){
+    addFiles(list);
+  });
+});
+window.addEventListener('dragover', function(e){ e.preventDefault(); });
+window.addEventListener('drop', function(e){ e.preventDefault(); });
+
+/* ===================== 稿紙控制項 ===================== */
+(function(){
+  var taEl = document.getElementById('sheet-text');
+  if(taEl){
+    taEl.addEventListener('input', function(){
+      sheetSetText(taEl.value);
+      save(); renderSheet();
+    });
+    taEl.addEventListener('scroll', function(){}, false);
+  }
+  var bind = function(id, ev, fn){ var el = document.getElementById(id); if(el) el.addEventListener(ev, fn); };
+  bind('sheet-type', 'change', function(e){ sheetUI().type = e.target.value; save(); renderSheet(); });
+  bind('sheet-cols', 'change', function(e){ sheetUI().cols = parseInt(e.target.value, 10) || 22; save(); renderSheet(); });
+  bind('sheet-spacing', 'change', function(e){ sheetUI().spacing = parseFloat(e.target.value) || 1.15; save(); renderSheet(); });
+  bind('sheet-limit', 'input', function(e){ sheetUI().limit = Math.max(0, parseInt(e.target.value, 10) || 0); save(); renderSheet(); });
+  bind('sheet-limit', 'change', function(e){ sheetUI().limit = Math.max(0, parseInt(e.target.value, 10) || 0); save(); renderSheet(); });
+  bind('sheet-font', 'change', function(e){ sheetUI().font = e.target.value; save(); renderSheet(); });
+  bind('sheet-ratio', 'input', function(e){ sheetUI().ratio = parseInt(e.target.value, 10) || 74; save(); renderSheet(); });
+  bind('sheet-font-preview', 'change', function(e){ sheetUI().fontPreview = !!e.target.checked; save(); renderSheet(); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && SHEET.open) closeSheet();
+  });
+  window.addEventListener('afterprint', function(){ document.body.classList.remove('print-sheet'); });
+})();
+
+/* ===================== 匯出清單語言控制項 ===================== */
+(function(){
+  var sel = document.getElementById('export-lang');
+  if(!sel) return;
+  sel.value = EXPORT_LANG;
+  sel.addEventListener('change', function(e){ setExportLang(e.target.value); });
+})();
+
+/* ===================== 啟動 ===================== */
+syncSheetUI();
+renderAll();
+setSaveHint(t('save.loaded', {p: state.packages.length, f: state.files.length}));
+window.addEventListener('beforeunload', function(){ saveNow(); });
+})();
+</script>
+</body>
+</html>
