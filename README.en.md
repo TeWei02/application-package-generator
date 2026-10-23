@@ -3,6 +3,17 @@
 A document-organising tool usable by **any applicant** for application review (書審 / document screening) materials.
 Pure local, offline-capable, usable from a single file.
 
+
+<div align="center">
+
+## Demo Preview
+
+A 12-second walkthrough of the core workflow: create an application package, configure required items, drag files in for auto-categorisation, check for missing items, and export the submission checklist. The video is a canvas-rendered simulation; to try the real tool, double-click `index.html` in your browser.
+
+<video controls width="640" src="assets/demo-preview.webm"></video>
+
+</div>
+
 ---
 
 ## 1. What It Is

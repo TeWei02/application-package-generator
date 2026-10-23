@@ -4,6 +4,17 @@
 
 一個給**任何申請者**都能用的備審（書審）資料整理工具。純本機、可離線、開一個檔案就能用。
 
+
+<div align="center">
+
+## Demo Preview
+
+12 秒看懂核心流程：建立申請包 → 設定應繳項目 → 拖入檔案自動歸類 → 缺件檢查 → 匯出繳件清單。影片為 canvas 模擬的操作示範；想實際體驗，雙擊 `index.html` 即可在瀏覽器使用。
+
+<video controls width="640" src="assets/demo-preview.webm"></video>
+
+</div>
+
 ---
 
 ## 一、這是什麼
