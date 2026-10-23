@@ -1,5 +1,7 @@
 # 書審資料包產生器 — 使用說明
 
+**Language:** [![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-%E4%B8%AD%E6%96%87%E7%89%88-blue?style=flat-square)](README.md) [![English](https://img.shields.io/badge/English-English-blue?style=flat-square)](README.en.md)
+
 一個給**任何申請者**都能用的備審（書審）資料整理工具。純本機、可離線、開一個檔案就能用。
 
 ---
