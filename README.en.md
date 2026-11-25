@@ -1,5 +1,7 @@
 # Application Document Package Generator — User Guide
 
+**Language:** [![English](https://img.shields.io/badge/English-English-blue?style=flat-square)](README.en.md) [![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-%E4%B8%AD%E6%96%87%E7%89%88-blue?style=flat-square)](README.md)
+
 A document-organising tool usable by **any applicant** for application review (書審 / document screening) materials.
 Pure local, offline-capable, usable from a single file.
 
